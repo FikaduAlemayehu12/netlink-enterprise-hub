@@ -1,0 +1,7 @@
+{
+  "name": "Copy of NetLink General Solutions",
+  "description": "The premier B2B IT solutions provider in Ethiopia, specializing in enterprise networking, software development, cybersecurity, and smart infrastructure.",
+  "requestFramePermissions": [
+    "geolocation"
+  ]
+}
