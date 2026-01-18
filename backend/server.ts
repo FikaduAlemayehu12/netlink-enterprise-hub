@@ -16,15 +16,15 @@ app.use(express.json({ limit: '50mb' }) as any);
 
 // Database Sync
 sequelize.sync({ alter: true }).then(() => {
-  console.log('✅ NetLink Postgres Synced');
+  console.log('✅ NetLink Postgres Synced and Ready');
 });
 
-// MVC Routes
+// API Routes
 app.get('/api/users', UserController.getAll);
 app.get('/api/users/:id', UserController.getProfile);
 app.get('/api/reports', ReportController.getAll);
 app.post('/api/reports', ReportController.submit);
 
 app.listen(port, () => {
-  console.log(`🚀 NetLink Server active on port ${port}`);
+  console.log(`🚀 NetLink Server active on http://localhost:${port}`);
 });

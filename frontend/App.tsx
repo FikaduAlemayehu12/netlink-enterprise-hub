@@ -45,7 +45,7 @@ const App: React.FC = () => {
           activePath={activePath} 
           onNavigate={setActivePath} 
           onLoginClick={() => {
-            // Mock Login: In production, this calls /api/login
+            // Mock Login: Points to /api/users in production
             setUser({ role: 'admin', id: '1' });
             setActivePath('/dashboard');
           }} 

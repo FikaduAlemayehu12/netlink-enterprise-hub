@@ -3,10 +3,10 @@
   "name": "netlink-enterprise-hub",
   "version": "1.0.0",
   "description": "Enterprise IT Hub for NetLink General Solutions",
-  "main": "server.ts",
+  "main": "backend/server.ts",
   "scripts": {
-    "start": "tsx server.ts",
-    "dev": "tsx watch server.ts",
+    "start": "tsx backend/server.ts",
+    "dev": "tsx watch backend/server.ts",
     "build": "tsc"
   },
   "dependencies": {

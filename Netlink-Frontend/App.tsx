@@ -15,16 +15,7 @@ const App: React.FC = () => {
 
   const renderContent = () => {
     if (activePath === '/dashboard' && user) {
-      return (
-        <Dashboard 
-          role={user.role} 
-          userId={user.id} 
-          onLogout={() => { 
-            setUser(null); 
-            setActivePath('/'); 
-          }} 
-        />
-      );
+      return <Dashboard role={user.role} userId={user.id} onLogout={() => { setUser(null); setActivePath('/'); }} />;
     }
 
     switch (activePath) {
@@ -45,13 +36,13 @@ const App: React.FC = () => {
           activePath={activePath} 
           onNavigate={setActivePath} 
           onLoginClick={() => {
-            // Mock Login: In production, this calls /api/login
+            // Mock Login for demo
             setUser({ role: 'admin', id: '1' });
             setActivePath('/dashboard');
           }} 
         />
       )}
-      <main className={`flex-grow ${!isDashboard ? 'pt-16' : ''}`}>
+      <main className={`flex-grow ${!isDashboard ? 'pt-20' : ''}`}>
         {renderContent()}
       </main>
       {!isDashboard && <Footer />}

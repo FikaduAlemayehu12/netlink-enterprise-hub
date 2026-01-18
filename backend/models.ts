@@ -17,7 +17,7 @@ export const Employee = sequelize.define('employee', {
 export const Report = sequelize.define('report', {
   id: { type: DataTypes.UUID, defaultValue: DataTypes.UUIDV4, primaryKey: true },
   file_name: { type: DataTypes.STRING, allowNull: false },
-  content: { type: DataTypes.TEXT }, // Base64 or Description
+  content: { type: DataTypes.TEXT },
   date: { type: DataTypes.DATE, defaultValue: DataTypes.NOW }
 });
 

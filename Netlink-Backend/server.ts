@@ -14,17 +14,16 @@ const port = process.env.PORT || 5000;
 app.use(cors());
 app.use(express.json({ limit: '50mb' }) as any);
 
-// Database Sync
+// Sync Database
 sequelize.sync({ alter: true }).then(() => {
-  console.log('✅ NetLink Postgres Synced');
+  console.log('✅ NetLink Database Ready');
 });
 
 // MVC Routes
-app.get('/api/users', UserController.getAll);
-app.get('/api/users/:id', UserController.getProfile);
-app.get('/api/reports', ReportController.getAll);
-app.post('/api/reports', ReportController.submit);
+app.get('/api/users', UserController.getAllUsers);
+app.get('/api/users/:id', UserController.getUserById);
+app.get('/api/reports', ReportController.getReports);
 
 app.listen(port, () => {
-  console.log(`🚀 NetLink Server active on port ${port}`);
+  console.log(`🚀 NetLink Backend running on http://localhost:${port}`);
 });
