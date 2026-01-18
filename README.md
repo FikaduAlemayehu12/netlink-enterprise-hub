@@ -1,48 +1,52 @@
+
 # NetLink Enterprise Hub 🔗
 
 ![NetLink Banner](https://images.unsplash.com/photo-1550751827-4bd374c3f58b?auto=format&fit=crop&q=80&w=1200)
 
-## 🚀 Overview
-NetLink Enterprise Hub is a state-of-the-art B2B platform and internal management suite designed for **NetLink General Solutions PLC**, Ethiopia's premier IT solutions provider. The application bridges the gap between high-end client services (Networking, Software, Electrical Engineering) and internal corporate excellence.
+## 🚀 Local Setup & Database "Cloning"
+
+To get the database and backend running on your local machine via VS Code:
+
+### 1. Prerequisites
+- **Node.js** (v18+)
+- **PostgreSQL** installed locally.
+- **VS Code Extension**: Install the [PostgreSQL](https://marketplace.visualstudio.com/items?itemName=ckolkman.vscode-postgres) extension to manage data without leaving your editor.
+
+### 2. Database Initialization
+1. Open pgAdmin or your terminal.
+2. Create a database named `netlink-gs`.
+3. Run the following command in your VS Code terminal to "clone" the structure:
+   ```bash
+   psql -U postgres -d netlink-gs -f schema.sql
+   ```
+   *(Password: 1437faf@)*
+
+### 3. Backend Setup
+1. Install dependencies:
+   ```bash
+   npm install
+   ```
+2. Start the development server:
+   ```bash
+   npm run dev
+   ```
 
 ## ✨ Key Features
 
 ### 🏢 Corporate Presence
 - **Dynamic Services Portfolio:** Interactive exploration of IT, Software, and Infrastructure solutions.
-- **AI Assistant:** Integrated Gemini 3 Flash model for real-time customer support and service inquiries.
-- **Brand Management:** Live-sync CEO profile and vision statements.
+- **AI Assistant:** Integrated Gemini 3 Flash model for real-time customer support.
+- **Hikvision Visibility:** Optimized hero section ensuring partner posters are high-visibility and unclipped.
 
 ### 📊 Staff Management (Internal)
-- **Granular Access Control:** Role-based permissions (Admin, Officer, Employee) protecting sensitive payroll and corporate data.
-- **Performance Intelligence:** Interactive SVG "Velocity Sparklines" visualizing employee KPI trends over time.
-- **Task-Based Evaluation:** Admin tools to commit performance reviews directly to staff profiles.
-
-### 🏆 Hall of Excellence
-- **Champion's Frame:** A custom-engineered visual spotlight for the Employee of the Quarter, featuring high-end gold glowing borders, badges, and automated homepage promotion.
-
-### 📰 Broadcast Engine
-- **Real-time News Feed:** Managed portal for publishing corporate news, events, and partnership updates (e.g., Hikvision authorized status).
-
-## 🛠 Tech Stack
-- **Frontend:** React 19 (ESM Modules)
-- **Styling:** Tailwind CSS 3.x
-- **Icons:** Lucide React
-- **Intelligence:** Google Gemini 3 (Generative AI API)
-- **Data:** Local-first Persistence (LocalStorage) with high-performance sync
-- **Visuals:** SVG-based dynamic charting
-
-## 🚦 Getting Started
-1. **Clone the repository:**
-   ```bash
-   git clone https://github.com/yourusername/netlink-enterprise-hub.git
-   ```
-2. **Setup API Key:** Ensure your environment has a valid `API_KEY` for Google GenAI features.
-3. **Run:** Open `index.html` in any modern browser or use a local dev server.
+- **Granular Access Control:** Role-based permissions (Admin, Officer, Employee).
+- **Control Room Feed:** A real-time "Jira-style" activity feed where staff post daily plans and mention colleagues using `@name@netlink-gs.com`.
+- **Performance Intelligence:** Interactive SVG "Velocity Sparklines" visualizing employee KPI trends.
 
 ## 🛡️ Security & Roles
-- **Admin:** Full corporate oversight, payroll management, and data purging.
-- **Officer:** Staff directory management and news broadcasting.
-- **Employee:** Self-service profile updates and personal performance tracking.
+- **Admin:** `admin@netlink-gs.com` / `admin123`
+- **Officer:** `officer@netlink-gs.com` / `officer123`
+- **Employee:** `firstname@netlink-gs.com` / `password123`
 
 ---
 © 2024 NetLink General Solutions PLC. Designed for Excellence.

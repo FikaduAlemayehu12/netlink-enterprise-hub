@@ -1,27 +1,32 @@
+
 {
-  "name": "copy-of-netlink-general-solutions",
-  "private": true,
-  "version": "0.0.0",
-  "type": "module",
+  "name": "netlink-enterprise-hub",
+  "version": "1.0.0",
+  "description": "Enterprise IT Hub for NetLink General Solutions",
+  "main": "server.ts",
   "scripts": {
-    "dev": "vite",
-    "build": "vite build",
-    "preview": "vite preview"
+    "start": "tsx server.ts",
+    "dev": "tsx watch server.ts",
+    "build": "tsc"
   },
   "dependencies": {
-    "react": "^19.2.3",
-    "react-dom": "^19.2.3",
     "@google/genai": "^1.37.0",
-    "lucide-react": "^0.562.0",
+    "cors": "^2.8.5",
     "dotenv": "^17.2.3",
     "express": "^5.2.1",
-    "cors": "^2.8.5",
-    "pg": "^8.17.1"
+    "lucide-react": "^0.562.0",
+    "pg": "^8.17.1",
+    "react": "^19.2.3",
+    "react-dom": "^19.2.3"
   },
   "devDependencies": {
-    "@types/node": "^22.14.0",
-    "@vitejs/plugin-react": "^5.0.0",
-    "typescript": "~5.8.2",
-    "vite": "^6.2.0"
+    "@types/cors": "^2.8.17",
+    "@types/express": "^5.0.0",
+    "@types/node": "^22.13.4",
+    "@types/pg": "^8.11.11",
+    "@types/react": "^19.0.8",
+    "@types/react-dom": "^19.0.3",
+    "tsx": "^4.19.2",
+    "typescript": "^5.7.3"
   }
 }
