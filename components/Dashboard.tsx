@@ -4,7 +4,8 @@ import {
   Settings, Users, FileText, Award, Save, Plus, Trash2, TrendingUp, 
   DollarSign, Camera, Briefcase, ShieldCheck, X, Image as ImageIcon, 
   Upload, Check, UserCircle, Zap, History, Trophy, Search, Mail, ExternalLink, AtSign, Send, Download, ClipboardList,
-  ThumbsUp, MessageSquare, Heart, Smile, MoreHorizontal, Globe, LifeBuoy, BookOpen, Calendar, CreditCard
+  ThumbsUp, MessageSquare, Heart, Smile, MoreHorizontal, Globe, LifeBuoy, BookOpen, Calendar, CreditCard,
+  Bell, CheckCircle2, Copy, Link as LinkIcon
 } from 'lucide-react';
 import { 
   getOwnerData, saveOwnerData, 
@@ -12,7 +13,7 @@ import {
   getNews, saveNews,
   getAppreciation, saveAppreciation,
   fileToBase64,
-  Employee, NewsItem, Department, Seniority, ReportRecord, TaskPost, Comment, Reaction
+  Employee, NewsItem, Department, Seniority, ReportRecord, TaskPost, Comment, Reaction, AppNotification
 } from '../services/mockDataService';
 
 interface DashboardProps {
@@ -64,6 +65,7 @@ const Dashboard: React.FC<DashboardProps> = ({ role, userId, onLogout }) => {
   const [saveIndicator, setSaveIndicator] = useState<string | null>(null);
   const [showTaskReview, setShowTaskReview] = useState<string | null>(null); 
   const [reviewScore, setReviewScore] = useState(80);
+  const [showNotifications, setShowNotifications] = useState(false);
   
   // Award State
   const [awardData, setAwardData] = useState(appreciation);
@@ -86,12 +88,51 @@ const Dashboard: React.FC<DashboardProps> = ({ role, userId, onLogout }) => {
     evaluationFrequency: 'Monthly' as const,
     reportsCount: 0,
     reports: [],
-    taskFeed: []
+    taskFeed: [],
+    notifications: []
   } as Employee : null);
 
   const triggerSaveIndicator = (msg: string) => {
     setSaveIndicator(msg);
     setTimeout(() => setSaveIndicator(null), 3000);
+  };
+
+  const getCompanyEmail = (name: string) => {
+    const cleanName = name.replace(/^(Mr\.|Ms\.|Mrs\.|Dr\.|Eng\.)\s+/i, '');
+    const user = cleanName.split(' ')[0].toLowerCase();
+    return `${user}@netlink-gs.com`;
+  };
+
+  const notifyMentions = (text: string, postId: string) => {
+    const mentions = text.match(/@([a-zA-Z0-9]+@netlink-gs\.com)/g);
+    if (!mentions || !currentEmployee) return;
+
+    const mentionEmails = mentions.map(m => m.substring(1));
+    const updatedEmployees = [...employees];
+    let changed = false;
+
+    updatedEmployees.forEach(emp => {
+      const empEmail = getCompanyEmail(emp.name);
+      if (mentionEmails.includes(empEmail) && emp.id !== currentEmployee.id) {
+        const newNotification: AppNotification = {
+          id: Date.now().toString() + Math.random(),
+          fromName: currentEmployee.name,
+          fromPhoto: currentEmployee.photo,
+          type: 'mention',
+          postId: postId,
+          message: `mentioned you in a post: "${text.substring(0, 30)}..."`,
+          timestamp: Date.now(),
+          read: false
+        };
+        emp.notifications = [newNotification, ...(emp.notifications || [])];
+        changed = true;
+      }
+    });
+
+    if (changed) {
+      setEmployees(updatedEmployees);
+      saveEmployees(updatedEmployees);
+    }
   };
 
   const handleUpdateEmployee = (id: string, field: keyof Employee, value: any) => {
@@ -157,6 +198,7 @@ const Dashboard: React.FC<DashboardProps> = ({ role, userId, onLogout }) => {
 
     const updatedFeed = [newPost, ...(emp.taskFeed || [])];
     handleUpdateEmployee(emp.id, 'taskFeed', updatedFeed);
+    notifyMentions(content, newPost.id);
     triggerSaveIndicator("Task Plan Attached!");
   };
 
@@ -180,6 +222,7 @@ const Dashboard: React.FC<DashboardProps> = ({ role, userId, onLogout }) => {
                 text: payload,
                 timestamp: Date.now()
               };
+              notifyMentions(payload, postId);
               return { ...post, comments: [...post.comments, newComment] };
             }
           }
@@ -207,6 +250,14 @@ const Dashboard: React.FC<DashboardProps> = ({ role, userId, onLogout }) => {
     });
   };
 
+  const copyPostLink = (postId: string) => {
+    const baseUrl = window.location.origin + window.location.pathname;
+    const shareUrl = `${baseUrl}?post=${postId}`;
+    navigator.clipboard.writeText(shareUrl).then(() => {
+      triggerSaveIndicator("Link copied to clipboard!");
+    });
+  };
+
   const getGlobalFeed = (): TaskPost[] => {
     let all: TaskPost[] = [];
     employees.forEach(e => {
@@ -228,17 +279,26 @@ const Dashboard: React.FC<DashboardProps> = ({ role, userId, onLogout }) => {
     }
   };
 
+  const markNotificationsRead = () => {
+    if (!currentEmployee) return;
+    const updated = employees.map(emp => {
+      if (emp.id === currentEmployee.id) {
+        return {
+          ...emp,
+          notifications: (emp.notifications || []).map(n => ({ ...n, read: true }))
+        };
+      }
+      return emp;
+    });
+    setEmployees(updated);
+    saveEmployees(updated);
+  };
+
   const filteredEmployees = employees.filter(e => 
     e.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
     e.role.toLowerCase().includes(searchTerm.toLowerCase()) ||
     e.department.toLowerCase().includes(searchTerm.toLowerCase())
   );
-
-  const getCompanyEmail = (name: string) => {
-    const cleanName = name.replace(/^(Mr\.|Ms\.|Mrs\.|Dr\.|Eng\.)\s+/i, '');
-    const user = cleanName.split(' ')[0].toLowerCase();
-    return `${user}@netlink-gs.com`;
-  };
 
   const formatDate = (timestamp: number) => {
     return new Date(timestamp).toLocaleDateString('en-US', {
@@ -250,11 +310,13 @@ const Dashboard: React.FC<DashboardProps> = ({ role, userId, onLogout }) => {
     });
   };
 
+  const unreadCount = (currentEmployee?.notifications || []).filter(n => !n.read).length;
+
   return (
     <div className="min-h-screen bg-slate-50 flex font-sans selection:bg-blue-100">
       {saveIndicator && (
         <div className="fixed top-8 left-1/2 -translate-x-1/2 z-[300] bg-green-600 text-white px-8 py-4 rounded-2xl shadow-2xl flex items-center gap-3 font-black animate-in fade-in slide-in-from-top duration-300">
-           <Check className="w-6 h-6" /> {saveIndicator}
+           <CheckCircle2 className="w-6 h-6" /> {saveIndicator}
         </div>
       )}
 
@@ -336,7 +398,55 @@ const Dashboard: React.FC<DashboardProps> = ({ role, userId, onLogout }) => {
       </div>
 
       {/* Main Area */}
-      <div className="flex-grow p-12 overflow-y-auto max-h-screen scroll-smooth custom-scrollbar">
+      <div className="flex-grow p-12 overflow-y-auto max-h-screen scroll-smooth custom-scrollbar relative">
+        {/* Top Header Controls */}
+        <div className="absolute top-12 right-12 flex gap-4 z-[100]">
+           <div className="relative">
+              <button 
+                onClick={() => {
+                  setShowNotifications(!showNotifications);
+                  if (!showNotifications) markNotificationsRead();
+                }}
+                className={`p-4 rounded-2xl shadow-sm border transition-all ${showNotifications ? 'bg-blue-600 text-white border-blue-600' : 'bg-white text-slate-600 hover:bg-slate-50'}`}
+              >
+                 <Bell size={24} />
+                 {unreadCount > 0 && (
+                   <span className="absolute -top-1 -right-1 w-6 h-6 bg-red-500 text-white rounded-full flex items-center justify-center text-[10px] font-black border-2 border-white animate-bounce">
+                     {unreadCount}
+                   </span>
+                 )}
+              </button>
+
+              {showNotifications && (
+                <div className="absolute top-full right-0 mt-4 w-[400px] bg-white rounded-[2rem] shadow-2xl border border-slate-100 overflow-hidden animate-in fade-in slide-in-from-top-4 duration-300">
+                   <div className="p-6 border-b flex justify-between items-center bg-slate-50">
+                      <h4 className="font-black text-xs uppercase tracking-widest text-slate-400">Notifications</h4>
+                      <button onClick={() => setShowNotifications(false)}><X size={16} className="text-slate-400" /></button>
+                   </div>
+                   <div className="max-h-[500px] overflow-y-auto custom-scrollbar">
+                      {(currentEmployee?.notifications || []).length === 0 ? (
+                        <div className="p-12 text-center text-slate-400 italic">No recent notifications.</div>
+                      ) : (
+                        (currentEmployee?.notifications || []).map((n) => (
+                          <div key={n.id} className={`p-6 border-b last:border-none flex gap-4 transition-colors ${n.read ? 'bg-white' : 'bg-blue-50/50'}`}>
+                             <img src={n.fromPhoto} className="w-12 h-12 rounded-xl object-cover" />
+                             <div className="flex-grow space-y-1">
+                                <p className="text-sm">
+                                  <span className="font-black text-slate-900">{n.fromName}</span>{' '}
+                                  <span className="text-slate-600">{n.message}</span>
+                                </p>
+                                <p className="text-[10px] font-black text-blue-500 uppercase tracking-widest">{formatDate(n.timestamp)}</p>
+                             </div>
+                             {!n.read && <div className="w-2 h-2 rounded-full bg-blue-600 self-center" />}
+                          </div>
+                        ))
+                      )}
+                   </div>
+                </div>
+              )}
+           </div>
+        </div>
+
         {activeTab === 'profile' && currentEmployee && (
           <div className="max-w-4xl mx-auto space-y-12 animate-in fade-in slide-in-from-bottom duration-500">
              <header className="flex justify-between items-end">
@@ -518,7 +628,15 @@ const Dashboard: React.FC<DashboardProps> = ({ role, userId, onLogout }) => {
                               <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mt-1">{formatDate(post.timestamp)}</p>
                            </div>
                         </div>
-                        <div className="flex items-center gap-4">
+                        <div className="flex items-center gap-3">
+                           <button 
+                             onClick={() => copyPostLink(post.id)}
+                             className="p-3 bg-slate-50 text-slate-400 rounded-full hover:bg-blue-600 hover:text-white transition-all shadow-sm flex items-center gap-2 group/btn"
+                             title="Copy direct link to post"
+                           >
+                             <LinkIcon size={16} />
+                             <span className="text-[10px] font-black uppercase hidden group-hover/btn:block">Copy Link</span>
+                           </button>
                            <span className="text-[10px] font-black uppercase text-blue-600 tracking-widest bg-blue-50 px-4 py-1 rounded-full border border-blue-100">
                              {employees.find(e => e.id === post.authorId)?.role || 'Staff'}
                            </span>
@@ -717,8 +835,8 @@ const Dashboard: React.FC<DashboardProps> = ({ role, userId, onLogout }) => {
             <div className="space-y-6">
                {news.map(item => (
                  <div key={item.id} className="bg-white p-8 rounded-[3rem] shadow-sm border space-y-4">
-                    <input className="w-full text-2xl font-black text-slate-900 bg-transparent" value={item.title} onChange={(e) => { const u = news.map(n => n.id === item.id ? { ...n, title: e.target.value } : n); setNews(u); saveNews(u); }} />
-                    <textarea rows={3} className="w-full text-slate-600 font-medium bg-transparent" value={item.content} onChange={(e) => { const u = news.map(n => n.id === item.id ? { ...n, content: e.target.value } : n); setNews(u); saveNews(u); }} />
+                    <input className="w-full text-2xl font-black text-slate-900 bg-transparent" value={item.title} onChange={(e) => { const n_updated = news.map(n => n.id === item.id ? { ...n, title: e.target.value } : n); setNews(n_updated); saveNews(n_updated); }} />
+                    <textarea rows={3} className="w-full text-slate-600 font-medium bg-transparent" value={item.content} onChange={(e) => { const n_updated = news.map(n => n.id === item.id ? { ...n, content: e.target.value } : n); setNews(n_updated); saveNews(n_updated); }} />
                  </div>
                ))}
             </div>

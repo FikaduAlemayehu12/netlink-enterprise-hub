@@ -1,36 +1,23 @@
 
 import express from 'express';
-import { Pool } from 'pg';
 import cors from 'cors';
 import dotenv from 'dotenv';
+import { sequelize } from './database';
+import { Employee, TaskPost, Comment, Report, NewsItem } from './models';
 
 dotenv.config();
 
 const app = express();
 const port = process.env.PORT || 5000;
 
-// Middleware
 app.use(cors());
-// Fixed: Explicitly cast express.json() to any to resolve the TypeScript overload mismatch error 
-// where 'NextHandleFunction' was being compared to 'PathParams'.
 app.use(express.json({ limit: '50mb' }) as any);
 
-// Postgres Pool Connection
-const pool = new Pool({
-  user: 'postgres',
-  host: 'localhost',
-  database: 'netlink-gs',
-  password: '1437faf@',
-  port: 5432,
-});
-
-// Test DB Connection
-pool.connect((err, client, release) => {
-  if (err) {
-    return console.error('Error acquiring client', err.stack);
-  }
-  console.log('Successfully connected to NetLink Postgres DB');
-  release();
+// Sync Database
+sequelize.sync({ alter: true }).then(() => {
+  console.log('✅ NetLink Database synced via Sequelize');
+}).catch(err => {
+  console.error('❌ Database sync failed:', err);
 });
 
 // --- API ROUTES ---
@@ -38,8 +25,9 @@ pool.connect((err, client, release) => {
 // 1. Get All Employees
 app.get('/api/employees', async (req, res) => {
   try {
-    const result = await pool.query('SELECT * FROM employees ORDER BY created_at DESC');
-    res.json(result.rows);
+    // Fix: Using type assertion to ensure findAll is recognized on the Employee model
+    const employees = await (Employee as any).findAll({ order: [['createdAt', 'DESC']] });
+    res.json(employees);
   } catch (err) {
     res.status(500).json({ error: 'Failed to fetch employees' });
   }
@@ -49,31 +37,32 @@ app.get('/api/employees', async (req, res) => {
 app.post('/api/tasks', async (req, res) => {
   const { authorId, content } = req.body;
   try {
-    const result = await pool.query(
-      'INSERT INTO task_posts (author_id, content) VALUES ($1, $2) RETURNING *',
-      [authorId, content]
-    );
-    res.json(result.rows[0]);
+    // Fix: Using type assertion to ensure create is recognized on the TaskPost model
+    const task = await (TaskPost as any).create({ author_id: authorId, content });
+    res.json(task);
   } catch (err) {
     res.status(500).json({ error: 'Failed to create task' });
   }
 });
 
-// 3. Like Task
+// 3. Like Task (Atomic Toggle)
 app.post('/api/tasks/:id/like', async (req, res) => {
   const { userId } = req.body;
   const taskId = req.params.id;
   try {
-    // This logic handles toggling the like in Postgres
-    await pool.query(`
-      UPDATE task_posts 
-      SET likes = CASE 
-        WHEN $1 = ANY(likes) THEN array_remove(likes, $1)
-        ELSE array_append(likes, $1)
-      END
-      WHERE id = $2
-    `, [userId, taskId]);
-    res.json({ success: true });
+    // Fix: Using type assertion to ensure findByPk is recognized on the TaskPost model
+    const task = await (TaskPost as any).findByPk(taskId);
+    if (!task) return res.status(404).json({ error: 'Task not found' });
+    
+    let likes = (task as any).likes || [];
+    if (likes.includes(userId)) {
+      likes = likes.filter((id: string) => id !== userId);
+    } else {
+      likes.push(userId);
+    }
+    
+    await task.update({ likes });
+    res.json({ success: true, likes });
   } catch (err) {
     res.status(500).json({ error: 'Interaction failed' });
   }
@@ -83,32 +72,32 @@ app.post('/api/tasks/:id/like', async (req, res) => {
 app.post('/api/reports', async (req, res) => {
   const { employeeId, fileName, fileData } = req.body;
   try {
-    const result = await pool.query(
-      'INSERT INTO reports (employee_id, file_name, file_data) VALUES ($1, $2, $3) RETURNING *',
-      [employeeId, fileName, fileData]
-    );
-    res.json(result.rows[0]);
+    // Fix: Using type assertion to ensure create is recognized on the Report model
+    const report = await (Report as any).create({ 
+      employee_id: employeeId, 
+      file_name: fileName, 
+      file_data: fileData 
+    });
+    res.json(report);
   } catch (err) {
     res.status(500).json({ error: 'Upload failed' });
   }
 });
 
-// 5. Get Global Feed
+// 5. Get Global Feed (Includes Author Info)
 app.get('/api/feed', async (req, res) => {
   try {
-    const query = `
-      SELECT tp.*, e.name as author_name, e.photo_url as author_photo 
-      FROM task_posts tp
-      JOIN employees e ON tp.author_id = e.id
-      ORDER BY tp.timestamp DESC
-    `;
-    const result = await pool.query(query);
-    res.json(result.rows);
+    // Fix: Using type assertion to ensure findAll is recognized on the TaskPost model
+    const feed = await (TaskPost as any).findAll({
+      include: [{ model: Employee, as: 'author', attributes: ['name', 'photo_url', 'role'] }],
+      order: [['createdAt', 'DESC']]
+    });
+    res.json(feed);
   } catch (err) {
     res.status(500).json({ error: 'Feed sync failed' });
   }
 });
 
 app.listen(port, () => {
-  console.log(`NetLink Backend running on http://localhost:${port}`);
+  console.log(`🚀 NetLink Backend running on http://localhost:${port}`);
 });

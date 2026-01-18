@@ -16,6 +16,17 @@ export interface Comment {
   timestamp: number;
 }
 
+export interface AppNotification {
+  id: string;
+  fromName: string;
+  fromPhoto: string;
+  type: 'mention';
+  postId: string;
+  message: string;
+  timestamp: number;
+  read: boolean;
+}
+
 export interface TaskPost {
   id: string;
   authorId: string;
@@ -51,6 +62,7 @@ export interface Employee {
   reportsCount?: number;
   reports?: ReportRecord[];
   taskFeed?: TaskPost[];
+  notifications?: AppNotification[];
 }
 
 export interface NewsItem {
@@ -97,11 +109,11 @@ export const getEmployees = (): Employee[] => {
   if (saved) return JSON.parse(saved);
   
   const initial: Employee[] = [
-    { id: '1', name: 'Mr. Feyisa Bekele', role: 'CTO', department: 'Management', seniority: 'Executive', photo: 'https://i.pravatar.cc/150?u=1', baseSalary: 65000, performanceScore: 98, performanceHistory: [85, 90, 88, 95, 98], plan: 'Infrastructure Expansion 2024', evaluationFrequency: 'Monthly', reportsCount: 2, reports: [], taskFeed: [] },
-    { id: '2', name: 'Ms. Hana Alemu', role: 'Lead Software Engineer', department: 'Software Engineering', seniority: 'Lead', photo: 'https://i.pravatar.cc/150?u=2', baseSalary: 55000, performanceScore: 95, performanceHistory: [92, 91, 94, 93, 95], plan: 'AI Integration Project', evaluationFrequency: 'Weekly', reportsCount: 1, reports: [], taskFeed: [] },
-    { id: '3', name: 'Mr. Haftu', role: 'Full Stack Developer', department: 'Software Engineering', seniority: 'Senior', photo: 'https://i.pravatar.cc/150?u=3', baseSalary: 45000, performanceScore: 88, performanceHistory: [70, 75, 80, 85, 88], plan: 'Enterprise ERP Module', evaluationFrequency: 'Daily', reportsCount: 0, reports: [], taskFeed: [] },
-    { id: '4', name: 'Mr. Fayera', role: 'Network Engineer', department: 'IT & Network', seniority: 'Senior', photo: 'https://i.pravatar.cc/150?u=4', baseSalary: 42000, performanceScore: 90, performanceHistory: [88, 89, 91, 88, 90], plan: 'Hikvision Site Rollout', evaluationFrequency: 'Weekly', reportsCount: 0, reports: [], taskFeed: [] },
-    { id: '5', name: 'Mr. Endale', role: 'Facility Engineer', department: 'Data Center & Facility', seniority: 'Senior', photo: 'https://i.pravatar.cc/150?u=5', baseSalary: 40000, performanceScore: 85, performanceHistory: [80, 82, 81, 84, 85], plan: 'Cooling System Upgrade', evaluationFrequency: 'Monthly', reportsCount: 0, reports: [], taskFeed: [] }
+    { id: '1', name: 'Mr. Feyisa Bekele', role: 'CTO', department: 'Management', seniority: 'Executive', photo: 'https://i.pravatar.cc/150?u=1', baseSalary: 65000, performanceScore: 98, performanceHistory: [85, 90, 88, 95, 98], plan: 'Infrastructure Expansion 2024', evaluationFrequency: 'Monthly', reportsCount: 2, reports: [], taskFeed: [], notifications: [] },
+    { id: '2', name: 'Ms. Hana Alemu', role: 'Lead Software Engineer', department: 'Software Engineering', seniority: 'Lead', photo: 'https://i.pravatar.cc/150?u=2', baseSalary: 55000, performanceScore: 95, performanceHistory: [92, 91, 94, 93, 95], plan: 'AI Integration Project', evaluationFrequency: 'Weekly', reportsCount: 1, reports: [], taskFeed: [], notifications: [] },
+    { id: '3', name: 'Mr. Haftu', role: 'Full Stack Developer', department: 'Software Engineering', seniority: 'Senior', photo: 'https://i.pravatar.cc/150?u=3', baseSalary: 45000, performanceScore: 88, performanceHistory: [70, 75, 80, 85, 88], plan: 'Enterprise ERP Module', evaluationFrequency: 'Daily', reportsCount: 0, reports: [], taskFeed: [], notifications: [] },
+    { id: '4', name: 'Mr. Fayera', role: 'Network Engineer', department: 'IT & Network', seniority: 'Senior', photo: 'https://i.pravatar.cc/150?u=4', baseSalary: 42000, performanceScore: 90, performanceHistory: [88, 89, 91, 88, 90], plan: 'Hikvision Site Rollout', evaluationFrequency: 'Weekly', reportsCount: 0, reports: [], taskFeed: [], notifications: [] },
+    { id: '5', name: 'Mr. Endale', role: 'Facility Engineer', department: 'Data Center & Facility', seniority: 'Senior', photo: 'https://i.pravatar.cc/150?u=5', baseSalary: 40000, performanceScore: 85, performanceHistory: [80, 82, 81, 84, 85], plan: 'Cooling System Upgrade', evaluationFrequency: 'Monthly', reportsCount: 0, reports: [], taskFeed: [], notifications: [] }
   ];
   return initial;
 };
