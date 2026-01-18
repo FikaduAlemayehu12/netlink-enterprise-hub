@@ -17,7 +17,7 @@ const Contact: React.FC<{ initialSubject?: string }> = ({ initialSubject = "" })
     e.preventDefault();
     setIsSubmitting(true);
     
-    // Simulating the "hidden" notification to fikadualemayehu1437@gmail.com
+    // Simulating the "hidden" notification to support@netlink-gs@gmail.com.
     // In a production environment with a backend, this data would be dispatched here.
     await new Promise(resolve => setTimeout(resolve, 1200));
     

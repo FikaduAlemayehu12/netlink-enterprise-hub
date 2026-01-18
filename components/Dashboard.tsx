@@ -1,13 +1,18 @@
 
 import React, { useState, useEffect, useRef } from 'react';
-import { Settings, Users, FileText, Award, Save, Plus, Trash2, TrendingUp, DollarSign, Camera, Briefcase, ShieldCheck, X, Image as ImageIcon, Briefcase as RoleIcon, Upload, Check, UserCircle, Lock, Zap, Target, History, Trophy, Star, Crown } from 'lucide-react';
+import { 
+  Settings, Users, FileText, Award, Save, Plus, Trash2, TrendingUp, 
+  DollarSign, Camera, Briefcase, ShieldCheck, X, Image as ImageIcon, 
+  Upload, Check, UserCircle, Zap, History, Trophy, Search, Mail, ExternalLink, AtSign, Send, Download, ClipboardList,
+  ThumbsUp, MessageSquare, Heart, Smile, MoreHorizontal, Globe, LifeBuoy, BookOpen, Calendar, CreditCard
+} from 'lucide-react';
 import { 
   getOwnerData, saveOwnerData, 
   getEmployees, saveEmployees, 
   getNews, saveNews,
   getAppreciation, saveAppreciation,
   fileToBase64,
-  Employee, NewsItem, Department, Seniority 
+  Employee, NewsItem, Department, Seniority, ReportRecord, TaskPost, Comment, Reaction
 } from '../services/mockDataService';
 
 interface DashboardProps {
@@ -16,34 +21,17 @@ interface DashboardProps {
   onLogout: () => void;
 }
 
-const PREDEFINED_ROLES = [
-  'Network Engineer',
-  'Software Developer',
-  'Sales Executive',
-  'Lead Software Engineer',
-  'CTO',
-  'Facility Engineer',
-  'System Integrator',
-  'Project Manager',
-  'HR Manager',
-  'Communication Officer',
-  'Security Specialist'
-];
-
 const PerformanceSparkline: React.FC<{ data: number[] }> = ({ data }) => {
   if (!data || data.length < 2) return <div className="text-[10px] text-slate-400">No History</div>;
-  
   const width = 100;
   const height = 30;
   const max = 100;
   const min = 0;
-  
   const points = data.map((val, i) => {
     const x = (i / (data.length - 1)) * width;
     const y = height - ((val - min) / (max - min)) * height;
     return `${x},${y}`;
   }).join(' ');
-
   return (
     <svg width={width} height={height} className="overflow-visible">
       <defs>
@@ -52,24 +40,9 @@ const PerformanceSparkline: React.FC<{ data: number[] }> = ({ data }) => {
           <stop offset="100%" stopColor="#3b82f6" stopOpacity="0" />
         </linearGradient>
       </defs>
-      <path
-        d={`M 0,${height} ${points.split(' ').map((p, i) => (i === 0 ? `L ${p}` : `L ${p}`)).join(' ')} L ${width},${height} Z`}
-        fill="url(#sparkGradient)"
-      />
-      <polyline
-        fill="none"
-        stroke="#3b82f6"
-        strokeWidth="2"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        points={points}
-      />
-      <circle
-        cx={points.split(' ').pop()?.split(',')[0]}
-        cy={points.split(' ').pop()?.split(',')[1]}
-        r="3"
-        fill="#3b82f6"
-      />
+      <path d={`M 0,${height} ${points.split(' ').map((p, i) => (i === 0 ? `L ${p}` : `L ${p}`)).join(' ')} L ${width},${height} Z`} fill="url(#sparkGradient)" />
+      <polyline fill="none" stroke="#3b82f6" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" points={points} />
+      <circle cx={points.split(' ').pop()?.split(',')[0]} cy={points.split(' ').pop()?.split(',')[1]} r="3" fill="#3b82f6" />
     </svg>
   );
 };
@@ -80,12 +53,13 @@ const Dashboard: React.FC<DashboardProps> = ({ role, userId, onLogout }) => {
   const isHR = isAdmin || isOfficer;
   
   const initialTab = isAdmin ? 'settings' : (isHR ? 'employees' : 'profile');
-  const [activeTab, setActiveTab] = useState<'settings' | 'employees' | 'content' | 'profile' | 'awards'>(initialTab as any);
+  const [activeTab, setActiveTab] = useState<'settings' | 'employees' | 'content' | 'profile' | 'awards' | 'tasks'>(initialTab as any);
   
   const [owner, setOwner] = useState(getOwnerData());
   const [employees, setEmployees] = useState<Employee[]>(getEmployees());
   const [news, setNews] = useState<NewsItem[]>(getNews());
   const [appreciation, setAppreciation] = useState(getAppreciation());
+  const [searchTerm, setSearchTerm] = useState('');
   
   const [saveIndicator, setSaveIndicator] = useState<string | null>(null);
   const [showTaskReview, setShowTaskReview] = useState<string | null>(null); 
@@ -95,9 +69,25 @@ const Dashboard: React.FC<DashboardProps> = ({ role, userId, onLogout }) => {
   const [awardData, setAwardData] = useState(appreciation);
 
   const ownerFileRef = useRef<HTMLInputElement>(null);
-  const empFileRefs = useRef<{ [key: string]: HTMLInputElement }>({});
+  const empFileRefs = useRef<Record<string, HTMLInputElement>>({});
+  const reportFileRef = useRef<HTMLInputElement>(null);
 
-  const currentEmployee = employees.find(e => e.id === userId);
+  const currentEmployee = employees.find(e => e.id === userId) || (isAdmin ? { 
+    name: 'Administrator', 
+    id: 'admin', 
+    photo: 'https://i.pravatar.cc/150?u=admin',
+    role: 'System Administrator',
+    seniority: 'Executive' as Seniority,
+    department: 'Management' as Department,
+    baseSalary: 0,
+    performanceScore: 100,
+    performanceHistory: [100],
+    plan: 'System Oversight',
+    evaluationFrequency: 'Monthly' as const,
+    reportsCount: 0,
+    reports: [],
+    taskFeed: []
+  } as Employee : null);
 
   const triggerSaveIndicator = (msg: string) => {
     setSaveIndicator(msg);
@@ -105,40 +95,16 @@ const Dashboard: React.FC<DashboardProps> = ({ role, userId, onLogout }) => {
   };
 
   const handleUpdateEmployee = (id: string, field: keyof Employee, value: any) => {
-    if (role === 'employee') {
-      if (id !== userId) return;
-      if (field !== 'name' && field !== 'photo') return;
-    }
-    
-    if (isOfficer && field === 'id' && value === 'delete') return;
-
     const updated = employees.map(e => e.id === id ? { ...e, [field]: value } : e);
     setEmployees(updated);
     saveEmployees(updated);
   };
 
-  const submitPerformanceReview = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!showTaskReview) return;
-    
-    const updated = employees.map(emp => {
-      if (emp.id === showTaskReview) {
-        const history = [...emp.performanceHistory, reviewScore].slice(-10);
-        return { ...emp, performanceScore: reviewScore, performanceHistory: history };
-      }
-      return emp;
-    });
-    
-    setEmployees(updated);
-    saveEmployees(updated);
-    setShowTaskReview(null);
-    triggerSaveIndicator("Performance Review Synced!");
-  };
-
   const handleSaveAward = () => {
-    saveAppreciation(awardData);
-    setAppreciation(awardData);
-    triggerSaveIndicator("Quarterly Award Published!");
+    const dataWithTime = { ...awardData, timestamp: Date.now() };
+    saveAppreciation(dataWithTime);
+    setAppreciation(dataWithTime);
+    triggerSaveIndicator("Winner of the Quarter Published!");
   };
 
   const handleEmployeePhotoUpload = async (id: string, e: React.ChangeEvent<HTMLInputElement>) => {
@@ -147,6 +113,106 @@ const Dashboard: React.FC<DashboardProps> = ({ role, userId, onLogout }) => {
       handleUpdateEmployee(id, 'photo', base64);
       triggerSaveIndicator("Profile photo updated!");
     }
+  };
+
+  const handleReportUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files[0] && currentEmployee) {
+      const file = e.target.files[0];
+      const newReport: ReportRecord = {
+        id: Date.now().toString(),
+        name: file.name,
+        timestamp: Date.now()
+      };
+      const emp = employees.find(em => em.id === userId);
+      if (!emp) return;
+      const currentReports = emp.reports || [];
+      const updatedReports = [newReport, ...currentReports];
+      const updatedEmployees = employees.map(item => 
+        item.id === userId ? { ...item, reports: updatedReports, reportsCount: updatedReports.length } : item
+      );
+      setEmployees(updatedEmployees);
+      saveEmployees(updatedEmployees);
+      triggerSaveIndicator("Daily Report Uploaded!");
+      if (reportFileRef.current) reportFileRef.current.value = '';
+    }
+  };
+
+  // --- Task Feed Logic ---
+  const handlePostTask = (content: string) => {
+    if (!content.trim() || !currentEmployee) return;
+    const emp = employees.find(e => e.id === userId);
+    if (!emp) return;
+
+    const newPost: TaskPost = {
+      id: Date.now().toString(),
+      authorId: emp.id,
+      authorName: emp.name,
+      authorPhoto: emp.photo,
+      content: content,
+      timestamp: Date.now(),
+      likes: [],
+      reactions: [],
+      comments: []
+    };
+
+    const updatedFeed = [newPost, ...(emp.taskFeed || [])];
+    handleUpdateEmployee(emp.id, 'taskFeed', updatedFeed);
+    triggerSaveIndicator("Task Plan Attached!");
+  };
+
+  const handleInteract = (postId: string, authorId: string, action: 'like' | 'comment' | 'react', payload?: any) => {
+    const updated = employees.map(emp => {
+      if (emp.id === authorId) {
+        const newFeed = (emp.taskFeed || []).map(post => {
+          if (post.id === postId) {
+            if (action === 'like') {
+              const currentId = userId || 'sys';
+              const likes = post.likes.includes(currentId) 
+                ? post.likes.filter(id => id !== currentId) 
+                : [...post.likes, currentId];
+              return { ...post, likes };
+            }
+            if (action === 'comment') {
+              const newComment: Comment = {
+                id: Date.now().toString(),
+                authorId: userId || 'sys',
+                authorName: currentEmployee?.name || 'User',
+                text: payload,
+                timestamp: Date.now()
+              };
+              return { ...post, comments: [...post.comments, newComment] };
+            }
+          }
+          return post;
+        });
+        return { ...emp, taskFeed: newFeed };
+      }
+      return emp;
+    });
+    setEmployees(updated);
+    saveEmployees(updated);
+  };
+
+  const renderContentWithMentions = (text: string) => {
+    const parts = text.split(/(@[a-zA-Z0-9]+@netlink-gs\.com)/g);
+    return parts.map((part, i) => {
+      if (part.match(/@[a-zA-Z0-9]+@netlink-gs\.com/)) {
+        return (
+          <span key={i} className="text-blue-600 font-black bg-blue-50 px-2 py-0.5 rounded-lg border border-blue-100 cursor-pointer hover:bg-blue-600 hover:text-white transition-all">
+            {part}
+          </span>
+        );
+      }
+      return part;
+    });
+  };
+
+  const getGlobalFeed = (): TaskPost[] => {
+    let all: TaskPost[] = [];
+    employees.forEach(e => {
+      if (e.taskFeed) all = [...all, ...e.taskFeed];
+    });
+    return all.sort((a, b) => b.timestamp - a.timestamp);
   };
 
   const deleteEmployee = (id: string) => {
@@ -162,9 +228,30 @@ const Dashboard: React.FC<DashboardProps> = ({ role, userId, onLogout }) => {
     }
   };
 
+  const filteredEmployees = employees.filter(e => 
+    e.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
+    e.role.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    e.department.toLowerCase().includes(searchTerm.toLowerCase())
+  );
+
+  const getCompanyEmail = (name: string) => {
+    const cleanName = name.replace(/^(Mr\.|Ms\.|Mrs\.|Dr\.|Eng\.)\s+/i, '');
+    const user = cleanName.split(' ')[0].toLowerCase();
+    return `${user}@netlink-gs.com`;
+  };
+
+  const formatDate = (timestamp: number) => {
+    return new Date(timestamp).toLocaleDateString('en-US', {
+      month: 'short',
+      day: 'numeric',
+      year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit'
+    });
+  };
+
   return (
     <div className="min-h-screen bg-slate-50 flex font-sans selection:bg-blue-100">
-      {/* Toast Notification */}
       {saveIndicator && (
         <div className="fixed top-8 left-1/2 -translate-x-1/2 z-[300] bg-green-600 text-white px-8 py-4 rounded-2xl shadow-2xl flex items-center gap-3 font-black animate-in fade-in slide-in-from-top duration-300">
            <Check className="w-6 h-6" /> {saveIndicator}
@@ -184,16 +271,23 @@ const Dashboard: React.FC<DashboardProps> = ({ role, userId, onLogout }) => {
               onClick={() => setActiveTab('profile')}
               className={`flex items-center gap-4 p-4 rounded-2xl transition-all font-bold text-sm ${activeTab === 'profile' ? 'bg-blue-600 shadow-xl' : 'hover:bg-white/5 text-slate-400'}`}
             >
-              <UserCircle size={20} /> My Profile
+              <UserCircle size={20} /> My Workspace
             </button>
           )}
+
+          <button 
+            onClick={() => setActiveTab('tasks')}
+            className={`flex items-center gap-4 p-4 rounded-2xl transition-all font-bold text-sm ${activeTab === 'tasks' ? 'bg-blue-600 shadow-xl' : 'hover:bg-white/5 text-slate-400'}`}
+          >
+            <Zap size={20} /> Control Room Feed
+          </button>
 
           {isAdmin && (
             <button 
               onClick={() => setActiveTab('settings')}
               className={`flex items-center gap-4 p-4 rounded-2xl transition-all font-bold text-sm ${activeTab === 'settings' ? 'bg-blue-600 shadow-xl' : 'hover:bg-white/5 text-slate-400'}`}
             >
-              <Settings size={20} /> CEO Profile
+              <Settings size={20} /> CEO Controls
             </button>
           )}
           
@@ -211,7 +305,7 @@ const Dashboard: React.FC<DashboardProps> = ({ role, userId, onLogout }) => {
               onClick={() => setActiveTab('awards')}
               className={`flex items-center gap-4 p-4 rounded-2xl transition-all font-bold text-sm ${activeTab === 'awards' ? 'bg-yellow-600 shadow-xl' : 'hover:bg-white/5 text-slate-400'}`}
             >
-              <Trophy size={20} /> Recognition
+              <Trophy size={20} /> Awards Center
             </button>
           )}
 
@@ -220,7 +314,7 @@ const Dashboard: React.FC<DashboardProps> = ({ role, userId, onLogout }) => {
               onClick={() => setActiveTab('content')}
               className={`flex items-center gap-4 p-4 rounded-2xl transition-all font-bold text-sm ${activeTab === 'content' ? 'bg-blue-600 shadow-xl' : 'hover:bg-white/5 text-slate-400'}`}
             >
-              <FileText size={20} /> News & Events
+              <FileText size={20} /> Corporate Feed
             </button>
           )}
         </nav>
@@ -232,517 +326,425 @@ const Dashboard: React.FC<DashboardProps> = ({ role, userId, onLogout }) => {
              </div>
              <div className="overflow-hidden">
                 <p className="text-xs font-black uppercase tracking-widest text-white truncate">
-                  {role === 'employee' ? currentEmployee?.name.split(' ')[0] : role}
+                  {currentEmployee?.name.split(' ')[0]}
                 </p>
-                <p className="text-[9px] text-slate-500 font-bold uppercase">Online Now</p>
+                <p className="text-[9px] text-slate-500 font-bold uppercase">Corporate SSO</p>
              </div>
           </div>
           <button onClick={onLogout} className="w-full py-3 rounded-xl bg-red-600/10 text-red-500 hover:bg-red-600 hover:text-white transition-all font-black text-[10px] uppercase tracking-widest">Logout</button>
         </div>
       </div>
 
-      {/* Performance Review Modal */}
-      {showTaskReview && isHR && (
-        <div className="fixed inset-0 z-[400] bg-slate-900/60 backdrop-blur-md flex items-center justify-center p-6 animate-in fade-in duration-300">
-           <div className="bg-white w-full max-w-lg rounded-[3rem] shadow-2xl overflow-hidden border border-slate-100 animate-in zoom-in duration-300">
-              <div className="bg-slate-950 p-8 text-white flex justify-between items-center">
-                 <div className="flex items-center gap-4">
-                    <Zap className="text-yellow-400" />
-                    <div>
-                      <h3 className="text-xl font-black uppercase tracking-tighter">Performance Update</h3>
-                      <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">Task-Based Evaluation</p>
-                    </div>
-                 </div>
-                 <button onClick={() => setShowTaskReview(null)}><X size={24} /></button>
-              </div>
-              <form onSubmit={submitPerformanceReview} className="p-10 space-y-8">
-                 <div className="space-y-4">
-                    <div className="flex justify-between text-sm font-black text-slate-900 uppercase tracking-widest">
-                       <label>New KPI Score</label>
-                       <span className="text-blue-600">{reviewScore}%</span>
-                    </div>
-                    <input 
-                       type="range" min="0" max="100" value={reviewScore} 
-                       onChange={(e) => setReviewScore(parseInt(e.target.value))}
-                       className="w-full h-3 bg-slate-100 rounded-full appearance-none cursor-pointer accent-blue-600 border"
-                    />
-                 </div>
-                 
-                 <div className="space-y-2">
-                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block">Reviewer Notes (Optional)</label>
-                    <textarea 
-                      placeholder="e.g. Excellent delivery on the Ministry of Revenue integration project..."
-                      className="w-full p-5 bg-slate-50 border-none rounded-2xl outline-none font-medium text-sm min-h-[100px]"
-                    />
-                 </div>
-
-                 <button type="submit" className="w-full bg-[#414bb2] text-white py-5 rounded-2xl font-black text-lg flex items-center justify-center gap-3 shadow-xl hover:bg-blue-800 transition-all">
-                    Commit Score Update <Check />
-                 </button>
-              </form>
-           </div>
-        </div>
-      )}
-
       {/* Main Area */}
-      <div className="flex-grow p-12 overflow-y-auto max-h-screen scroll-smooth">
-        
-        {/* TAB: Profile (Self Service for Employees) */}
+      <div className="flex-grow p-12 overflow-y-auto max-h-screen scroll-smooth custom-scrollbar">
         {activeTab === 'profile' && currentEmployee && (
           <div className="max-w-4xl mx-auto space-y-12 animate-in fade-in slide-in-from-bottom duration-500">
-             <header className="space-y-2">
-                <h2 className="text-5xl font-black text-slate-900 leading-none tracking-tighter uppercase">My <span className="text-blue-600">Workspace</span></h2>
-                <p className="text-slate-500 text-lg font-medium italic">Your personalized professional dashboard at NetLink.</p>
+             <header className="flex justify-between items-end">
+                <div className="space-y-2">
+                  <h2 className="text-5xl font-black text-slate-900 leading-none tracking-tighter uppercase">Professional <span className="text-blue-600">Hub</span></h2>
+                  <p className="text-slate-500 text-lg font-medium italic">Authenticated as {getCompanyEmail(currentEmployee.name)}</p>
+                </div>
              </header>
 
-             <div className="bg-white p-12 rounded-[4rem] shadow-sm border space-y-12">
-                <div className="flex flex-col md:flex-row gap-12 items-center">
-                   <div className="relative group w-48 h-48 shrink-0">
-                      <img src={currentEmployee.photo} className="w-full h-full rounded-[3rem] object-cover shadow-2xl border-4 border-slate-50" />
-                      <button 
-                        onClick={() => empFileRefs.current[currentEmployee.id]?.click()}
-                        className="absolute inset-0 bg-blue-600/60 rounded-[3rem] opacity-0 group-hover:opacity-100 transition-opacity flex flex-col items-center justify-center text-white"
-                      >
-                        <Upload size={32} className="mb-2" />
-                        <span className="text-[10px] font-black uppercase tracking-widest">Update Photo</span>
-                      </button>
-                      <input type="file" hidden ref={el => { if (el) empFileRefs.current[currentEmployee.id] = el; }} accept="image/*" onChange={(e) => handleEmployeePhotoUpload(currentEmployee.id, e)} />
-                   </div>
-                   
-                   <div className="space-y-6 flex-grow">
-                      <div>
-                        <label className="text-[10px] font-black uppercase text-slate-400 tracking-widest block mb-1">Your Name</label>
-                        <input 
-                          className="text-3xl font-black text-slate-900 bg-transparent border-none outline-none focus:text-blue-600 w-full" 
-                          value={currentEmployee.name} 
-                          onChange={(e) => handleUpdateEmployee(currentEmployee.id, 'name', e.target.value)} 
-                        />
-                      </div>
-                      <div className="flex flex-wrap gap-4">
-                         <div className="bg-blue-50 px-6 py-2 rounded-full border border-blue-100 flex items-center gap-2">
-                            <span className="text-[10px] font-black uppercase text-blue-600 tracking-widest">{currentEmployee.seniority}</span>
-                            <Lock size={10} className="text-blue-300" />
+             <div className="grid lg:grid-cols-12 gap-12">
+                <div className="lg:col-span-8 space-y-12">
+                   <div className="bg-white p-10 rounded-[3.5rem] shadow-sm border space-y-10">
+                      <div className="flex gap-10 items-center">
+                         <div className="relative group w-32 h-32 shrink-0">
+                            <img src={currentEmployee.photo} className="w-full h-full rounded-[2.5rem] object-cover shadow-xl" />
                          </div>
-                         <div className="bg-slate-50 px-6 py-2 rounded-full border border-slate-200">
-                            <span className="text-[10px] font-black uppercase text-slate-500 tracking-widest">{currentEmployee.department}</span>
-                         </div>
-                      </div>
-                   </div>
-                </div>
-
-                <div className="grid md:grid-cols-2 gap-12">
-                   <div className="space-y-4">
-                      <label className="text-[10px] font-black uppercase text-slate-400 tracking-widest block flex items-center gap-2">Designated Role <Lock size={10}/></label>
-                      <div className="w-full p-4 bg-slate-50 rounded-2xl border text-slate-400 font-bold flex justify-between items-center italic">
-                        {currentEmployee.role}
-                        <span className="text-[8px] uppercase tracking-widest font-black opacity-30">Admin Restricted</span>
-                      </div>
-                   </div>
-                   <div className="space-y-4">
-                      <label className="text-[10px] font-black uppercase text-slate-400 tracking-widest block">Active Development Plan</label>
-                      <input className="w-full p-4 bg-slate-50 rounded-2xl border outline-none font-bold text-blue-600 italic" value={currentEmployee.plan} readOnly />
-                   </div>
-                </div>
-
-                <div className="pt-12 border-t flex flex-col md:flex-row justify-between items-center gap-12 bg-slate-50 -mx-12 -mb-12 p-12 rounded-b-[4rem]">
-                   <div className="flex items-center gap-8 w-full md:w-auto">
-                      <div className="bg-white p-6 rounded-[2rem] border shadow-inner">
-                        <p className="text-[8px] font-black uppercase text-slate-400 tracking-widest mb-2">KPI Trend</p>
-                        <PerformanceSparkline data={currentEmployee.performanceHistory} />
-                      </div>
-                      <div>
-                        <p className="text-4xl font-black text-blue-600 leading-none">{currentEmployee.performanceScore}%</p>
-                        <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-1">Live Performance Index</p>
-                      </div>
-                   </div>
-                   <div className="text-right">
-                      <p className="text-[10px] font-black uppercase text-slate-400 tracking-widest mb-1">Total Compensation</p>
-                      <p className="text-3xl font-black text-slate-900 leading-none">{currentEmployee.baseSalary.toLocaleString()} <span className="text-xs font-bold text-blue-500">ETB</span></p>
-                   </div>
-                </div>
-             </div>
-          </div>
-        )}
-
-        {/* TAB: Quarterly Awards Management */}
-        {activeTab === 'awards' && isHR && (
-          <div className="max-w-5xl mx-auto space-y-12 animate-in fade-in slide-in-from-bottom duration-500">
-             <header className="space-y-2 text-center md:text-left">
-                <h2 className="text-5xl font-black text-slate-900 tracking-tighter uppercase leading-none">Hall of <span className="text-yellow-600">Excellence</span></h2>
-                <p className="text-slate-500 text-lg font-medium italic">Select the quarterly high-performer for the homepage spotlight.</p>
-             </header>
-
-             <div className="grid lg:grid-cols-2 gap-12">
-                {/* Form */}
-                <div className="bg-white p-12 rounded-[4rem] shadow-sm border space-y-10">
-                   <div className="space-y-4">
-                      <label className="text-[10px] font-black uppercase text-slate-400 tracking-widest block">Select Employee of the Quarter</label>
-                      <div className="relative">
-                        <Users className="absolute left-5 top-1/2 -translate-y-1/2 text-slate-400" size={20} />
-                        <select 
-                          className="w-full pl-14 pr-6 py-5 bg-slate-50 border-none rounded-3xl outline-none font-black text-slate-800 appearance-none focus:ring-2 focus:ring-yellow-500"
-                          value={employees.find(e => e.name === awardData.name)?.id || ""}
-                          onChange={(e) => {
-                            const emp = employees.find(emp => emp.id === e.target.value);
-                            if (emp) {
-                              setAwardData({ ...awardData, name: emp.name, photo: emp.photo });
-                            }
-                          }}
-                        >
-                          <option value="">Choose Staff Member...</option>
-                          {employees.map(e => (
-                            <option key={e.id} value={e.id}>{e.name} ({e.role})</option>
-                          ))}
-                        </select>
-                      </div>
-                   </div>
-
-                   <div className="space-y-4">
-                      <label className="text-[10px] font-black uppercase text-slate-400 tracking-widest block">Achievement Title</label>
-                      <input 
-                        className="w-full px-8 py-5 bg-slate-50 rounded-3xl border-none outline-none font-bold text-slate-900 focus:ring-2 focus:ring-yellow-500"
-                        placeholder="e.g. Excellence in Software Architecture"
-                        value={awardData.achievement}
-                        onChange={(e) => setAwardData({ ...awardData, achievement: e.target.value })}
-                      />
-                   </div>
-
-                   <div className="space-y-4">
-                      <label className="text-[10px] font-black uppercase text-slate-400 tracking-widest block">Evaluation Period</label>
-                      <input 
-                        className="w-full px-8 py-5 bg-slate-50 rounded-3xl border-none outline-none font-bold text-slate-900 focus:ring-2 focus:ring-yellow-500"
-                        placeholder="e.g. Q3 2024"
-                        value={awardData.period}
-                        onChange={(e) => setAwardData({ ...awardData, period: e.target.value })}
-                      />
-                   </div>
-
-                   <button 
-                     onClick={handleSaveAward}
-                     className="w-full bg-yellow-500 text-white py-6 rounded-[2rem] font-black text-xl flex items-center justify-center gap-4 hover:bg-yellow-600 transition-all shadow-xl shadow-yellow-100 uppercase"
-                   >
-                     <Trophy size={28} /> Publish Award
-                   </button>
-                </div>
-
-                {/* Enhanced Champion's Frame Live Preview */}
-                <div className="bg-slate-900 rounded-[4rem] p-12 text-white relative overflow-hidden flex flex-col items-center justify-center text-center space-y-8 border-4 border-yellow-500/20">
-                   {/* Decorative background elements */}
-                   <div className="absolute top-0 right-0 p-8 opacity-10">
-                      <Star size={120} className="animate-spin-slow" />
-                   </div>
-                   <div className="absolute bottom-0 left-0 p-8 opacity-10">
-                      <Crown size={80} className="rotate-12" />
-                   </div>
-                   
-                   {/* The Champion's Frame */}
-                   <div className="relative group/frame">
-                      {/* Outer Glowing Rings */}
-                      <div className="absolute -inset-8 bg-yellow-500/20 rounded-full blur-3xl animate-pulse" />
-                      <div className="absolute -inset-4 border-2 border-yellow-500/30 rounded-full animate-spin-slow" />
-                      <div className="absolute -inset-2 border-4 border-yellow-500/50 rounded-full" />
-                      
-                      {/* Main Frame Container */}
-                      <div className="relative z-10 p-2 bg-gradient-to-tr from-yellow-600 via-yellow-400 to-yellow-600 rounded-full shadow-[0_0_50px_rgba(234,179,8,0.4)]">
-                        <div className="bg-slate-900 p-1 rounded-full">
-                           <img src={awardData.photo} className="w-48 h-48 rounded-full object-cover grayscale-[0.2] group-hover/frame:grayscale-0 transition-all duration-700" />
-                        </div>
-                      </div>
-
-                      {/* Badge / Sash overlay */}
-                      <div className="absolute -bottom-4 -right-4 z-20 bg-yellow-500 text-slate-900 p-3 rounded-2xl shadow-xl transform rotate-12 group-hover/frame:scale-110 transition-transform">
-                         <Trophy size={32} />
-                      </div>
-                      <div className="absolute -top-4 -left-4 z-20 bg-blue-600 text-white p-2 px-4 rounded-full shadow-xl font-black text-[10px] uppercase tracking-widest border-2 border-white transform -rotate-12">
-                         CHAMPION
-                      </div>
-                   </div>
-
-                   <div className="space-y-4 relative z-10">
-                      <div className="text-yellow-400 font-black text-xs uppercase tracking-[0.4em] flex items-center justify-center gap-2">
-                        <Star size={14} fill="currentColor" /> Hall of Fame <Star size={14} fill="currentColor" />
-                      </div>
-                      <h3 className="text-4xl font-black tracking-tight">{awardData.name}</h3>
-                      <p className="text-blue-300 font-bold text-lg leading-snug">{awardData.achievement}</p>
-                      <div className="pt-6 border-t border-white/10 mt-6 inline-block">
-                        <span className="text-slate-400 text-[10px] font-black uppercase tracking-widest">Certified Excellence • {awardData.period}</span>
-                      </div>
-                   </div>
-                </div>
-             </div>
-          </div>
-        )}
-
-        {/* TAB: Staff Directory (Admin & Officer View) */}
-        {activeTab === 'employees' && isHR && (
-          <div className="max-w-6xl mx-auto space-y-10 animate-in fade-in slide-in-from-bottom duration-500">
-            <header className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
-              <div className="space-y-2">
-                <h2 className="text-4xl font-black text-slate-900 tracking-tighter uppercase">Team <span className="text-blue-600">Analytics</span></h2>
-                <p className="text-slate-500 font-medium italic">Global oversight for all {employees.length} professional profiles.</p>
-              </div>
-              {isAdmin && (
-                <button 
-                  onClick={() => {
-                    const newEmp: Employee = {
-                      id: Date.now().toString(),
-                      name: 'New Talent',
-                      role: 'Software Developer',
-                      department: 'Software Engineering',
-                      seniority: 'Junior',
-                      photo: 'https://i.pravatar.cc/150',
-                      baseSalary: 20000,
-                      performanceScore: 50,
-                      performanceHistory: [50],
-                      plan: 'Probation',
-                      evaluationFrequency: 'Monthly'
-                    };
-                    const updated = [...employees, newEmp];
-                    setEmployees(updated);
-                    saveEmployees(updated);
-                    triggerSaveIndicator("Staff record initialized!");
-                  }} 
-                  className="bg-[#22c55e] text-white px-8 py-5 rounded-[2rem] font-black text-lg flex items-center gap-3 hover:bg-green-700 transition-all shadow-xl shadow-green-100"
-                >
-                  <Plus size={24} /> Register Staff
-                </button>
-              )}
-            </header>
-
-            <div className="grid gap-10">
-              {employees.map(emp => {
-                const bonus = (emp.performanceScore / 100) * (emp.baseSalary * 0.25);
-                const total = emp.baseSalary + bonus;
-                const isSelf = emp.id === userId;
-
-                return (
-                  <div key={emp.id} className={`bg-white p-10 rounded-[4rem] shadow-sm border space-y-8 group transition-all duration-300 relative ${isSelf ? 'ring-4 ring-blue-500/20' : ''}`}>
-                    <div className="grid lg:grid-cols-12 gap-10 items-start">
-                      
-                      <div className="lg:col-span-3 text-center space-y-4">
-                         <div className="relative group mx-auto w-32 h-32">
-                            <img src={emp.photo} className="w-full h-full rounded-[2rem] object-cover shadow-2xl border-4 border-slate-50" />
-                            <button 
-                              onClick={() => empFileRefs.current[emp.id]?.click()}
-                              className="absolute inset-0 bg-blue-600/50 rounded-[2rem] opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center text-white"
-                            >
-                              <Upload size={24} />
-                            </button>
-                            <input type="file" hidden ref={el => { if (el) empFileRefs.current[emp.id] = el; }} accept="image/*" onChange={(e) => handleEmployeePhotoUpload(emp.id, e)} />
-                         </div>
-                         <div className="inline-block px-4 py-1 rounded-full bg-slate-100 text-[10px] font-black uppercase text-slate-400">ID: {emp.id}</div>
-                      </div>
-
-                      <div className="lg:col-span-5 space-y-6">
-                        <div className="space-y-1">
-                          <label className="text-[10px] font-black uppercase text-slate-400 flex items-center gap-2 tracking-widest">Employee Name</label>
-                          <input className="text-3xl font-black text-slate-900 bg-transparent border-none outline-none focus:text-blue-600 w-full" value={emp.name} onChange={(e) => handleUpdateEmployee(emp.id, 'name', e.target.value)} />
-                        </div>
-                        
-                        <div className="space-y-4">
-                           <div className="space-y-1">
-                              <label className="text-[10px] font-black uppercase text-slate-400 flex items-center gap-1 tracking-widest"><RoleIcon size={12} className="text-blue-600"/> Corporate Designation</label>
-                              <select 
-                                className="w-full p-4 bg-slate-50 rounded-2xl border-2 border-transparent focus:border-blue-600 outline-none font-bold text-slate-800 shadow-inner appearance-none"
-                                value={emp.role}
-                                onChange={(e) => handleUpdateEmployee(emp.id, 'role', e.target.value)}
-                              >
-                                {PREDEFINED_ROLES.map(r => <option key={r} value={r}>{r}</option>)}
-                              </select>
-                           </div>
-
-                           <div className="grid grid-cols-2 gap-4">
-                              <select className="p-3 bg-slate-50 rounded-xl border-none font-bold text-xs" value={emp.seniority} onChange={(e) => handleUpdateEmployee(emp.id, 'seniority', e.target.value as Seniority)}>
-                                 <option>Junior</option><option>Regular</option><option>Senior</option><option>Lead</option><option>Executive</option>
-                              </select>
-                              <select className="p-3 bg-slate-50 rounded-xl border-none font-bold text-xs" value={emp.department} onChange={(e) => handleUpdateEmployee(emp.id, 'department', e.target.value as Department)}>
-                                 <option>Software Engineering</option><option>IT & Network</option><option>Data Center & Facility</option><option>Business Development</option><option>Management</option>
-                              </select>
-                           </div>
-                        </div>
-                      </div>
-
-                      <div className="lg:col-span-4 space-y-6 bg-slate-50 p-8 rounded-[3rem] border border-slate-100 shadow-inner relative overflow-hidden group/chart">
-                         <div className="space-y-4 relative z-10">
-                            <div className="flex justify-between items-center text-[10px] font-black uppercase tracking-widest">
-                               <span className="text-slate-400">KPI Performance</span>
-                               <span className="text-blue-600 bg-blue-50 px-3 py-1 rounded-full border border-blue-100">{emp.performanceScore}%</span>
+                         <div className="space-y-2">
+                            <h3 className="text-3xl font-black text-slate-900">{currentEmployee.name}</h3>
+                            <div className="flex gap-3">
+                               <span className="bg-blue-50 text-blue-600 text-[10px] font-black px-4 py-1 rounded-full uppercase tracking-widest border border-blue-100">{currentEmployee.role}</span>
+                               <span className="bg-slate-50 text-slate-500 text-[10px] font-black px-4 py-1 rounded-full uppercase tracking-widest border border-slate-200">{currentEmployee.seniority}</span>
                             </div>
-                            
-                            <div className="flex items-center gap-4 bg-white p-4 rounded-2xl shadow-sm">
-                               <PerformanceSparkline data={emp.performanceHistory} />
+                         </div>
+                      </div>
+
+                      <div className="space-y-4">
+                         <div className="flex justify-between items-center">
+                            <label className="text-[10px] font-black uppercase text-slate-400 tracking-widest flex items-center gap-2">
+                              <AtSign size={14} className="text-blue-500" /> New Task Plan / Post
+                            </label>
+                            <span className="text-[10px] text-slate-300 italic">Mention: @name@netlink-gs.com</span>
+                         </div>
+                         <div className="relative">
+                            <textarea 
+                               id="task-input"
+                               rows={4}
+                               placeholder="What is your plan for today? @Hana@netlink-gs.com check the API..."
+                               className="w-full p-6 bg-slate-50 rounded-[2.5rem] border-none outline-none font-medium text-slate-800 focus:ring-2 focus:ring-blue-500 shadow-inner"
+                            />
+                            <div className="absolute bottom-6 right-6 flex gap-2">
                                <button 
-                                 onClick={() => {setReviewScore(emp.performanceScore); setShowTaskReview(emp.id)}}
-                                 className="ml-auto p-3 bg-blue-600 text-white rounded-xl hover:bg-blue-700 transition-all shadow-lg shadow-blue-200"
-                                 title="Update Performance"
+                                 onClick={() => {
+                                   const val = (document.getElementById('task-input') as HTMLTextAreaElement).value;
+                                   handlePostTask(val);
+                                   (document.getElementById('task-input') as HTMLTextAreaElement).value = '';
+                                 }}
+                                 className="p-3 bg-blue-600 text-white rounded-full hover:bg-blue-700 transition-all shadow-lg flex items-center gap-2 px-6"
                                >
-                                 <Zap size={16} />
+                                  <Send size={16} /> <span className="text-xs font-black uppercase">Post Plan</span>
                                </button>
                             </div>
                          </div>
+                      </div>
+                   </div>
 
-                         <div className="pt-6 border-t border-slate-200 relative z-10">
-                            <div className="flex justify-between items-end">
-                               <div className="space-y-1">
-                                  <label className="text-[10px] font-black uppercase text-slate-400 tracking-widest">Base Salary</label>
-                                  <input 
-                                    type="number" 
-                                    className="bg-transparent border-b-2 border-slate-200 font-black text-slate-900 w-24 outline-none focus:border-green-500" 
-                                    value={emp.baseSalary} 
-                                    disabled={!isAdmin} // Only Admins change payroll
-                                    onChange={(e) => handleUpdateEmployee(emp.id, 'baseSalary', parseInt(e.target.value))} 
-                                  />
-                               </div>
-                               <div className="text-right">
-                                  <div className="text-[9px] uppercase font-bold text-slate-400 mb-1">Estimated Payout</div>
-                                  <div className="font-black text-2xl text-green-600 leading-none">{total.toLocaleString()} <span className="text-xs">ETB</span></div>
-                               </div>
+                   <div className="bg-[#1e293b] p-10 rounded-[3.5rem] text-white space-y-8 relative overflow-hidden">
+                      <div className="relative z-10">
+                        <div className="flex justify-between items-center mb-6">
+                           <h3 className="text-2xl font-black flex items-center gap-3"><FileText className="text-blue-400" /> My Personal Logs</h3>
+                           <button onClick={() => reportFileRef.current?.click()} className="bg-blue-600 hover:bg-blue-500 px-6 py-2 rounded-full text-xs font-black uppercase tracking-widest transition-all shadow-lg">
+                              <Plus size={14} /> Upload Report
+                           </button>
+                           <input type="file" ref={reportFileRef} className="hidden" onChange={handleReportUpload} />
+                        </div>
+                        <div className="grid gap-4 max-h-64 overflow-y-auto pr-2 custom-scrollbar">
+                           {(employees.find(e => e.id === userId)?.reports || []).map((report) => (
+                             <div key={report.id} className="bg-white/5 p-5 rounded-2xl border border-white/10 flex justify-between items-center group hover:bg-white/10 transition-all">
+                                <div className="flex items-center gap-4">
+                                   <div className="w-10 h-10 bg-blue-500/20 rounded-xl flex items-center justify-center text-blue-400">
+                                      <FileText size={20} />
+                                   </div>
+                                   <div>
+                                      <p className="text-sm font-bold truncate max-w-[200px]">{report.name}</p>
+                                      <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">{formatDate(report.timestamp)}</p>
+                                   </div>
+                                </div>
+                                <button className="p-2 text-white/40 hover:text-white"><Download size={16} /></button>
+                             </div>
+                           ))}
+                        </div>
+                      </div>
+                   </div>
+                </div>
+
+                <div className="lg:col-span-4 space-y-8">
+                   <div className="bg-white p-8 rounded-[3rem] shadow-sm border space-y-6">
+                      <h4 className="text-[10px] font-black uppercase text-slate-400 tracking-[0.2em] border-b pb-4">Internal Stats</h4>
+                      <div className="space-y-6">
+                         <div className="flex justify-between items-center">
+                            <div>
+                               <p className="text-[10px] font-black text-slate-400 uppercase">Performance</p>
+                               <p className="text-2xl font-black text-slate-900">{employees.find(e => e.id === userId)?.performanceScore || 0}%</p>
+                            </div>
+                            <PerformanceSparkline data={employees.find(e => e.id === userId)?.performanceHistory || []} />
+                         </div>
+                         <div className="p-4 bg-slate-50 rounded-2xl flex items-center gap-4">
+                            <Zap className="text-yellow-500" />
+                            <div>
+                               <p className="text-[10px] font-black text-slate-400 uppercase leading-tight">Focus</p>
+                               <p className="text-xs font-bold text-slate-700">{employees.find(e => e.id === userId)?.plan}</p>
                             </div>
                          </div>
-                         
-                         <div className="absolute top-0 right-0 p-4 opacity-5 scale-150 rotate-12 -z-0">
-                            <TrendingUp size={120} />
-                         </div>
                       </div>
-                    </div>
+                   </div>
 
-                    <div className="pt-6 border-t flex justify-between items-center text-[10px] font-black text-slate-300 uppercase tracking-[0.2em]">
-                       <div className="flex gap-8">
-                          <span className="flex items-center gap-2"><Target size={12} className="text-green-500"/> Verified Corporate Asset</span>
-                          <span className="flex items-center gap-2"><History size={12} className="text-blue-500"/> History Tracked</span>
-                       </div>
-                       {isAdmin && !isSelf && (
-                         <button onClick={() => deleteEmployee(emp.id)} className="text-slate-200 hover:text-red-500 transition-all flex items-center gap-2 group/del">
-                           <span className="opacity-0 group-hover/del:opacity-100 transition-opacity text-[8px]">Purge Records</span>
-                           <Trash2 size={24}/>
+                   {/* Quick Links / Shortcuts Widget */}
+                   <div className="bg-white p-8 rounded-[3rem] shadow-sm border space-y-6">
+                      <h4 className="text-[10px] font-black uppercase text-slate-400 tracking-[0.2em] border-b pb-4 flex items-center justify-between">
+                        Global Shortcuts
+                        <ExternalLink size={12} className="text-blue-500" />
+                      </h4>
+                      <div className="grid gap-3">
+                         <a href="#" className="flex items-center gap-4 p-4 bg-slate-50 rounded-2xl hover:bg-blue-600 hover:text-white transition-all group shadow-sm">
+                            <div className="w-10 h-10 bg-white rounded-xl flex items-center justify-center text-blue-600 group-hover:bg-white/20 group-hover:text-white transition-colors">
+                               <Calendar size={18} />
+                            </div>
+                            <div className="flex-grow">
+                               <p className="text-xs font-black uppercase leading-none">Request Leave</p>
+                               <p className="text-[9px] font-bold opacity-60">HR Self-Service</p>
+                            </div>
+                         </a>
+                         <a href="#" className="flex items-center gap-4 p-4 bg-slate-50 rounded-2xl hover:bg-blue-600 hover:text-white transition-all group shadow-sm">
+                            <div className="w-10 h-10 bg-white rounded-xl flex items-center justify-center text-green-600 group-hover:bg-white/20 group-hover:text-white transition-colors">
+                               <CreditCard size={18} />
+                            </div>
+                            <div className="flex-grow">
+                               <p className="text-xs font-black uppercase leading-none">Payroll Portal</p>
+                               <p className="text-[9px] font-bold opacity-60">View Payslips</p>
+                            </div>
+                         </a>
+                         <a href="#" className="flex items-center gap-4 p-4 bg-slate-50 rounded-2xl hover:bg-blue-600 hover:text-white transition-all group shadow-sm">
+                            <div className="w-10 h-10 bg-white rounded-xl flex items-center justify-center text-purple-600 group-hover:bg-white/20 group-hover:text-white transition-colors">
+                               <LifeBuoy size={18} />
+                            </div>
+                            <div className="flex-grow">
+                               <p className="text-xs font-black uppercase leading-none">IT Support</p>
+                               <p className="text-[9px] font-bold opacity-60">Internal Helpdesk</p>
+                            </div>
+                         </a>
+                         <a href="#" className="flex items-center gap-4 p-4 bg-slate-50 rounded-2xl hover:bg-blue-600 hover:text-white transition-all group shadow-sm">
+                            <div className="w-10 h-10 bg-white rounded-xl flex items-center justify-center text-amber-600 group-hover:bg-white/20 group-hover:text-white transition-colors">
+                               <BookOpen size={18} />
+                            </div>
+                            <div className="flex-grow">
+                               <p className="text-xs font-black uppercase leading-none">Knowledge Wiki</p>
+                               <p className="text-[9px] font-bold opacity-60">NetLink Docs</p>
+                            </div>
+                         </a>
+                      </div>
+                      <div className="pt-2 text-center">
+                         <button className="text-[10px] font-black uppercase text-slate-400 hover:text-blue-600 transition-colors tracking-widest">
+                            Manage Workspace Widgets
                          </button>
-                       )}
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
+                      </div>
+                   </div>
+                </div>
+             </div>
           </div>
         )}
 
-        {/* CEO Settings (Admin Only) */}
-        {activeTab === 'settings' && isAdmin && (
-          <div className="max-w-5xl mx-auto space-y-12 animate-in fade-in slide-in-from-bottom duration-500">
-            <header className="space-y-2">
-              <h2 className="text-5xl font-black text-slate-900 tracking-tighter uppercase">Brand <span className="text-blue-600">Identity</span></h2>
-              <p className="text-slate-500 text-lg font-medium italic">High-level narrative and profile synchronization.</p>
-            </header>
+        {activeTab === 'tasks' && (
+          <div className="max-w-4xl mx-auto space-y-12 animate-in fade-in duration-500">
+             <header className="space-y-4">
+                <div className="flex justify-between items-center">
+                   <h2 className="text-5xl font-black text-slate-900 uppercase tracking-tighter">Control Room <span className="text-blue-600">Feed</span></h2>
+                   <div className="bg-green-50 text-green-600 px-6 py-2 rounded-full font-black text-[10px] uppercase tracking-widest animate-pulse">Live Syncing</div>
+                </div>
+                <p className="text-slate-500 text-lg font-medium italic">Monitoring all staff daily plans, attachments and interactions.</p>
+             </header>
 
-            <div className="bg-white p-12 rounded-[4rem] shadow-sm border space-y-12">
-               <div className="flex flex-col lg:flex-row gap-12 items-center bg-slate-50 p-10 rounded-[3.5rem] border border-slate-100">
-                  <div className="relative group w-56 h-56 shrink-0 shadow-2xl rounded-full border-8 border-white">
-                     <img src={owner.image} className="w-full h-full rounded-full object-cover" />
-                     <button 
-                       onClick={() => ownerFileRef.current?.click()}
-                       className="absolute inset-0 bg-black/70 rounded-full opacity-0 group-hover:opacity-100 transition-opacity flex flex-col items-center justify-center text-white"
-                     >
-                        <Upload size={32} className="mb-2" />
-                        <span className="text-xs font-black uppercase tracking-widest">Update Photo</span>
-                     </button>
-                     <input type="file" hidden ref={ownerFileRef} accept="image/*" onChange={async (e) => {
-                        if (e.target.files && e.target.files[0]) {
-                           const base64 = await fileToBase64(e.target.files[0]);
-                           setOwner({...owner, image: base64});
-                        }
-                     }} />
-                  </div>
-                  <div className="space-y-6 w-full">
-                     <div className="grid md:grid-cols-2 gap-6">
-                        <div className="space-y-1">
-                          <label className="text-[10px] font-black uppercase text-slate-400 tracking-widest">Global Owner Name</label>
-                          <input className="w-full p-5 bg-white rounded-3xl border focus:border-blue-600 outline-none font-black text-xl" value={owner.name} onChange={(e) => setOwner({...owner, name: e.target.value})} />
+             <div className="space-y-8">
+                {getGlobalFeed().map(post => (
+                  <div key={post.id} className="bg-white rounded-[3.5rem] p-10 shadow-sm border border-slate-100 space-y-6 group hover:shadow-xl transition-all">
+                     <div className="flex justify-between items-start">
+                        <div className="flex gap-4 items-center">
+                           <img src={post.authorPhoto} className="w-14 h-14 rounded-2xl object-cover" />
+                           <div>
+                              <h4 className="text-lg font-black text-slate-900 leading-none">{post.authorName}</h4>
+                              <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mt-1">{formatDate(post.timestamp)}</p>
+                           </div>
                         </div>
-                        <div className="space-y-1">
-                          <label className="text-[10px] font-black uppercase text-slate-400 tracking-widest">Company Title</label>
-                          <input className="w-full p-5 bg-white rounded-3xl border focus:border-blue-600 outline-none font-black text-xl text-blue-600" value={owner.role} onChange={(e) => setOwner({...owner, role: e.target.value})} />
+                        <div className="flex items-center gap-4">
+                           <span className="text-[10px] font-black uppercase text-blue-600 tracking-widest bg-blue-50 px-4 py-1 rounded-full border border-blue-100">
+                             {employees.find(e => e.id === post.authorId)?.role || 'Staff'}
+                           </span>
+                        </div>
+                     </div>
+
+                     <div className="text-xl font-medium text-slate-700 leading-relaxed px-2">
+                        {renderContentWithMentions(post.content)}
+                     </div>
+
+                     <div className="pt-6 border-t border-slate-50 flex items-center gap-6">
+                        <button 
+                          onClick={() => handleInteract(post.id, post.authorId, 'like')}
+                          className={`flex items-center gap-2 px-6 py-2 rounded-full transition-all font-black text-xs uppercase tracking-widest ${post.likes.includes(userId || 'sys') ? 'bg-blue-600 text-white' : 'bg-slate-50 text-slate-400 hover:bg-slate-100'}`}
+                        >
+                           <ThumbsUp size={16} /> {post.likes.length}
+                        </button>
+                        
+                        <div className="flex items-center gap-2">
+                           <button className="p-3 bg-slate-50 text-slate-400 rounded-full hover:bg-slate-100 transition-all"><Heart size={16} /></button>
+                           <button className="p-3 bg-slate-50 text-slate-400 rounded-full hover:bg-slate-100 transition-all"><Smile size={16} /></button>
+                        </div>
+
+                        <div className="ml-auto text-slate-300 font-black text-[10px] uppercase flex items-center gap-2">
+                           <MessageSquare size={14} /> {post.comments.length} Discussion Nodes
+                        </div>
+                     </div>
+
+                     {/* Comment Section (Jira-style) */}
+                     <div className="bg-slate-50 rounded-[2.5rem] p-8 space-y-6">
+                        {post.comments.map(comment => (
+                          <div key={comment.id} className="flex gap-4">
+                             <div className="w-8 h-8 rounded-full bg-slate-200 shrink-0 overflow-hidden">
+                                <img src={`https://i.pravatar.cc/150?u=${comment.authorId}`} className="w-full h-full object-cover" />
+                             </div>
+                             <div className="bg-white p-4 rounded-2xl rounded-tl-none border border-slate-200 shadow-sm flex-grow">
+                                <div className="flex justify-between items-center mb-1">
+                                   <p className="text-xs font-black text-slate-900">{comment.authorName}</p>
+                                   <p className="text-[9px] font-bold text-slate-400">{formatDate(comment.timestamp)}</p>
+                                </div>
+                                <p className="text-sm text-slate-600">{renderContentWithMentions(comment.text)}</p>
+                             </div>
+                          </div>
+                        ))}
+                        
+                        <div className="relative">
+                           <input 
+                             placeholder="Reply or mention @officer@netlink-gs.com..."
+                             className="w-full p-4 pl-6 pr-14 bg-white rounded-2xl border-none outline-none ring-1 ring-slate-200 focus:ring-2 focus:ring-blue-600 shadow-sm text-sm"
+                             onKeyDown={(e) => {
+                               if (e.key === 'Enter') {
+                                 handleInteract(post.id, post.authorId, 'comment', (e.target as HTMLInputElement).value);
+                                 (e.target as HTMLInputElement).value = '';
+                               }
+                             }}
+                           />
+                           <button className="absolute right-4 top-1/2 -translate-y-1/2 text-blue-600">
+                              <Send size={18} />
+                           </button>
                         </div>
                      </div>
                   </div>
-               </div>
+                ))}
+             </div>
+          </div>
+        )}
 
-               <div className="space-y-4">
-                  <label className="text-[10px] font-black uppercase text-slate-400 tracking-widest block">Executive Vision & Bio</label>
-                  <textarea rows={8} className="w-full p-8 bg-slate-50 rounded-[3rem] border-none focus:ring-2 focus:ring-blue-500 outline-none font-medium leading-relaxed text-lg italic shadow-inner" value={owner.bio} onChange={(e) => setOwner({...owner, bio: e.target.value})} />
-               </div>
+        {activeTab === 'employees' && isHR && (
+          <div className="space-y-10 animate-in fade-in duration-500">
+            <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
+              <div className="space-y-1">
+                <h2 className="text-4xl font-black text-slate-900 leading-tight uppercase">Corporate <span className="text-blue-600">Staff</span></h2>
+                <p className="text-slate-500 font-medium">Manage corporate access and performance tiers.</p>
+              </div>
+              <div className="relative w-full md:w-96">
+                 <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
+                 <input 
+                   type="text"
+                   placeholder="Search by name, role or department..."
+                   className="w-full pl-12 pr-4 py-3 bg-white rounded-2xl border-none outline-none ring-1 ring-slate-200 focus:ring-2 focus:ring-blue-500 shadow-sm font-medium"
+                   value={searchTerm}
+                   onChange={(e) => setSearchTerm(e.target.value)}
+                 />
+              </div>
+            </div>
 
-               <button onClick={() => { saveOwnerData(owner); triggerSaveIndicator("Global profile updated!"); }} className="bg-[#414bb2] text-white px-16 py-6 rounded-[2rem] font-black text-xl flex items-center gap-4 hover:bg-blue-800 transition-all shadow-2xl shadow-blue-200">
-                  <Save size={28} /> Publish Global Changes
-               </button>
+            <div className="grid gap-6">
+              {filteredEmployees.map(emp => (
+                <div key={emp.id} className="bg-white p-6 rounded-[2.5rem] shadow-sm border flex flex-col md:flex-row items-center gap-8 group hover:shadow-xl hover:border-blue-100 transition-all">
+                   <div className="relative w-24 h-24 shrink-0">
+                      <img src={emp.photo} className="w-full h-full rounded-[2rem] object-cover" />
+                      <button onClick={() => empFileRefs.current[emp.id]?.click()} className="absolute -bottom-1 -right-1 bg-white p-2 rounded-full shadow-lg text-slate-400 hover:text-blue-600">
+                         <Camera size={14} />
+                      </button>
+                      <input type="file" ref={(el) => { if (el) empFileRefs.current[emp.id] = el; }} className="hidden" onChange={(e) => handleEmployeePhotoUpload(emp.id, e)} />
+                   </div>
+                   <div className="flex-grow space-y-3 text-center md:text-left">
+                      <div>
+                        <h4 className="text-xl font-black text-slate-900 leading-none">{emp.name}</h4>
+                        <p className="text-[#22c55e] font-black text-[10px] uppercase tracking-widest mt-1">{emp.role}</p>
+                      </div>
+                      <div className="flex flex-wrap gap-2 justify-center md:justify-start">
+                         <span className="px-3 py-1 bg-slate-100 rounded-full text-[9px] font-black uppercase text-slate-500">{emp.department}</span>
+                         <span className="px-3 py-1 bg-blue-50 rounded-full text-[9px] font-black uppercase text-blue-600">{emp.seniority}</span>
+                      </div>
+                   </div>
+                   <div className="flex items-center gap-8 px-8 border-x border-slate-100">
+                      <div className="text-center">
+                         <p className="text-[10px] font-black text-slate-400 uppercase">Performance</p>
+                         <div className="flex items-center gap-2">
+                           <span className="text-lg font-black">{emp.performanceScore}%</span>
+                           <PerformanceSparkline data={emp.performanceHistory} />
+                         </div>
+                      </div>
+                      <div className="text-center">
+                         <p className="text-[10px] font-black text-slate-400 uppercase">Reports</p>
+                         <p className="text-lg font-black text-slate-900">{emp.reportsCount || 0}</p>
+                      </div>
+                      {isAdmin && (
+                        <div className="text-center">
+                           <p className="text-[10px] font-black text-slate-400 uppercase">Salary (ETB)</p>
+                           <p className="text-lg font-black text-slate-900">{emp.baseSalary.toLocaleString()}</p>
+                        </div>
+                      )}
+                   </div>
+                   <div className="flex gap-2">
+                      <button onClick={() => setShowTaskReview(emp.id)} className="p-4 bg-blue-50 text-blue-600 rounded-2xl hover:bg-blue-600 hover:text-white transition-all"><History size={18} /></button>
+                      <button onClick={() => deleteEmployee(emp.id)} className="p-4 bg-red-50 text-red-500 rounded-2xl hover:bg-red-600 hover:text-white transition-all"><Trash2 size={18} /></button>
+                   </div>
+                </div>
+              ))}
             </div>
           </div>
         )}
 
-        {/* Content Feed (HR Only) */}
-        {activeTab === 'content' && isHR && (
-           <div className="max-w-5xl mx-auto space-y-12 animate-in fade-in slide-in-from-bottom duration-500">
-              <header className="flex justify-between items-center">
-                <h2 className="text-5xl font-black text-slate-900 tracking-tighter uppercase">Broadcast <span className="text-blue-600">Feed</span></h2>
-                <button 
-                  onClick={() => {
-                    const newItem: NewsItem = { id: Date.now().toString(), title: 'Draft Publication', content: 'Details...', date: new Date().toISOString().split('T')[0], type: 'News', author: role.toUpperCase() };
-                    const updated = [newItem, ...news];
-                    setNews(updated);
-                    saveNews(updated);
-                    triggerSaveIndicator("Broadcast draft created!");
-                  }}
-                  className="bg-blue-600 text-white px-10 py-5 rounded-[2rem] font-black text-lg shadow-xl"
-                >
-                  <Plus size={24} /> New Publication
-                </button>
+        {activeTab === 'awards' && isHR && (
+           <div className="max-w-4xl mx-auto space-y-12 animate-in fade-in duration-500">
+              <header className="space-y-2">
+                 <h2 className="text-5xl font-black text-slate-900 leading-none tracking-tighter uppercase">Hall of <span className="text-yellow-600">Excellence</span></h2>
+                 <p className="text-slate-500 font-medium italic">Publish the "Winner of the Quarter" to the main homepage.</p>
               </header>
-
-              <div className="grid gap-10">
-                 {news.map(item => (
-                   <div key={item.id} className="bg-white p-12 rounded-[4rem] border space-y-8 shadow-sm group">
-                      <div className="flex justify-between items-center">
-                        <select 
-                          className={`px-6 py-2 rounded-2xl text-[10px] font-black uppercase tracking-widest outline-none shadow-sm ${item.type === 'News' ? 'bg-blue-100 text-blue-700' : 'bg-green-100 text-green-700'}`}
-                          value={item.type}
-                          onChange={(e) => {
-                            const updated = news.map(n => n.id === item.id ? {...n, type: e.target.value as any} : n);
-                            setNews(updated);
-                            saveNews(updated);
-                          }}
-                        >
-                          <option>News</option>
-                          <option>Event</option>
-                        </select>
-                        <button onClick={() => {const updated = news.filter(n => n.id !== item.id); setNews(updated); saveNews(updated); triggerSaveIndicator("Post removed.");}} className="text-slate-200 hover:text-red-500 transition-colors"><Trash2 size={28}/></button>
-                      </div>
-                      <input 
-                        className="text-4xl font-black text-slate-900 bg-transparent border-none outline-none w-full border-b-2 border-transparent focus:border-blue-500 pb-2"
-                        value={item.title}
-                        onChange={(e) => {
-                          const updated = news.map(n => n.id === item.id ? {...n, title: e.target.value} : n);
-                          setNews(updated);
-                          saveNews(updated);
-                        }}
-                      />
-                      <textarea 
-                        rows={6}
-                        className="text-xl text-slate-600 bg-slate-50 p-10 rounded-[3rem] outline-none font-medium leading-relaxed w-full"
-                        value={item.content}
-                        onChange={(e) => {
-                          const updated = news.map(n => n.id === item.id ? {...n, content: e.target.value} : n);
-                          setNews(updated);
-                          saveNews(updated);
-                        }}
-                      />
-                      <div className="flex justify-between items-center text-[10px] font-black text-slate-400 uppercase tracking-widest">
-                         <span className="flex items-center gap-2"><Check size={12} className="text-blue-500"/> Public Visibility Active</span>
-                         <span>Published: {item.date} by {item.author}</span>
-                      </div>
-                   </div>
-                 ))}
+              <div className="grid md:grid-cols-2 gap-12">
+                 <div className="bg-white p-10 rounded-[3.5rem] shadow-sm border space-y-8">
+                    <h3 className="text-xl font-black flex items-center gap-3"><Settings className="text-yellow-500" /> Award Config</h3>
+                    <div className="space-y-6">
+                       <div className="space-y-2">
+                          <label className="text-[10px] font-black uppercase text-slate-400 tracking-widest ml-2">Champion</label>
+                          <select className="w-full p-4 bg-slate-50 rounded-2xl border-none outline-none font-bold" value={awardData.name} onChange={(e) => {
+                             const selected = employees.find(emp => emp.name === e.target.value);
+                             if (selected) setAwardData({ ...awardData, name: selected.name, photo: selected.photo });
+                          }}>
+                             {employees.map(e => <option key={e.id} value={e.name}>{e.name}</option>)}
+                          </select>
+                       </div>
+                       <div className="space-y-2">
+                          <label className="text-[10px] font-black uppercase text-slate-400 tracking-widest ml-2">Achievement</label>
+                          <input type="text" className="w-full p-4 bg-slate-50 rounded-2xl border-none outline-none font-bold" value={awardData.achievement} onChange={(e) => setAwardData({ ...awardData, achievement: e.target.value })} />
+                       </div>
+                       <button onClick={handleSaveAward} className="w-full bg-yellow-600 text-white py-4 rounded-2xl font-black text-sm uppercase tracking-widest hover:bg-yellow-700 transition-all shadow-xl">Publish to Home</button>
+                    </div>
+                 </div>
+                 <div className="bg-slate-900 rounded-[3.5rem] p-8 text-white text-center space-y-6">
+                    <h4 className="text-[10px] font-black uppercase tracking-[0.4em] text-yellow-500">Live Preview</h4>
+                    <img src={awardData.photo} className="w-48 h-48 mx-auto rounded-full object-cover border-4 border-yellow-500" />
+                    <p className="text-3xl font-black">{awardData.name}</p>
+                 </div>
               </div>
            </div>
         )}
+
+        {activeTab === 'settings' && isAdmin && (
+          <div className="max-w-4xl mx-auto space-y-12 animate-in fade-in duration-500">
+            <header className="space-y-2">
+              <h2 className="text-5xl font-black text-slate-900 leading-none tracking-tighter uppercase">Corporate <span className="text-blue-600">Identity</span></h2>
+            </header>
+            <div className="bg-white p-12 rounded-[4rem] shadow-sm border grid lg:grid-cols-2 gap-16">
+              <div className="space-y-8">
+                <input className="w-full p-4 bg-slate-50 rounded-2xl border-none outline-none font-bold" value={owner.name} onChange={(e) => setOwner({...owner, name: e.target.value})} />
+                <textarea rows={6} className="w-full p-4 bg-slate-50 rounded-2xl border-none outline-none font-medium" value={owner.bio} onChange={(e) => setOwner({...owner, bio: e.target.value})} />
+                <button onClick={() => { saveOwnerData(owner); triggerSaveIndicator("Corporate Identity Updated!"); }} className="w-full bg-blue-600 text-white py-5 rounded-[2rem] font-black text-lg shadow-xl">Deploy Sync</button>
+              </div>
+              <div className="relative group cursor-pointer" onClick={() => ownerFileRef.current?.click()}>
+                 <img src={owner.image} className="w-full h-[400px] rounded-[3rem] object-cover shadow-2xl" />
+                 <input type="file" ref={ownerFileRef} className="hidden" onChange={async (e) => { if (e.target.files?.[0]) { const b = await fileToBase64(e.target.files[0]); setOwner({...owner, image: b}); } }} />
+              </div>
+            </div>
+          </div>
+        )}
+
+        {activeTab === 'content' && isHR && (
+          <div className="max-w-4xl mx-auto space-y-12 animate-in fade-in duration-500">
+            <div className="flex justify-between items-center">
+               <h2 className="text-5xl font-black text-slate-900 uppercase">Corporate <span className="text-blue-600">Feed</span></h2>
+               <button onClick={() => { const i: NewsItem = { id: Date.now().toString(), title: 'New Update', content: '...', date: new Date().toISOString().split('T')[0], type: 'News', author: role.toUpperCase() }; const u = [i, ...news]; setNews(u); saveNews(u); }} className="bg-slate-900 text-white p-4 rounded-2xl"><Plus size={24} /></button>
+            </div>
+            <div className="space-y-6">
+               {news.map(item => (
+                 <div key={item.id} className="bg-white p-8 rounded-[3rem] shadow-sm border space-y-4">
+                    <input className="w-full text-2xl font-black text-slate-900 bg-transparent" value={item.title} onChange={(e) => { const u = news.map(n => n.id === item.id ? { ...n, title: e.target.value } : n); setNews(u); saveNews(u); }} />
+                    <textarea rows={3} className="w-full text-slate-600 font-medium bg-transparent" value={item.content} onChange={(e) => { const u = news.map(n => n.id === item.id ? { ...n, content: e.target.value } : n); setNews(u); saveNews(u); }} />
+                 </div>
+               ))}
+            </div>
+          </div>
+        )}
       </div>
+
+      {/* Performance Review Modal */}
+      {showTaskReview && (
+         <div className="fixed inset-0 z-[400] bg-slate-950/60 backdrop-blur-md flex items-center justify-center p-6">
+            <div className="bg-white rounded-[4rem] p-12 max-w-xl w-full space-y-8 shadow-2xl animate-in zoom-in duration-300">
+               <div className="flex justify-between items-start">
+                  <h3 className="text-3xl font-black text-slate-900 uppercase">Performance <span className="text-blue-600">Audit</span></h3>
+                  <button onClick={() => setShowTaskReview(null)} className="p-4 bg-slate-100 rounded-2xl"><X size={20} /></button>
+               </div>
+               <form onSubmit={(e) => { e.preventDefault(); const emp = employees.find(e => e.id === showTaskReview); if (emp) { const h = [...emp.performanceHistory, reviewScore].slice(-10); handleUpdateEmployee(emp.id, 'performanceScore', reviewScore); handleUpdateEmployee(emp.id, 'performanceHistory', h); setShowTaskReview(null); triggerSaveIndicator("Audit Committed!"); } }} className="space-y-10">
+                  <div className="flex justify-between items-end">
+                     <label className="text-sm font-black text-slate-400 uppercase">KPI Score</label>
+                     <span className="text-5xl font-black text-blue-600">{reviewScore}%</span>
+                  </div>
+                  <input type="range" min="0" max="100" className="w-full h-3 bg-slate-100 rounded-full appearance-none cursor-pointer accent-blue-600" value={reviewScore} onChange={(e) => setReviewScore(parseInt(e.target.value))} />
+                  <button type="submit" className="w-full bg-slate-900 text-white py-6 rounded-[2rem] font-black text-lg hover:bg-blue-600 transition-all shadow-xl">Commit Review</button>
+               </form>
+            </div>
+         </div>
+      )}
     </div>
   );
 };

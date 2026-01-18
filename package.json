@@ -12,7 +12,11 @@
     "react": "^19.2.3",
     "react-dom": "^19.2.3",
     "@google/genai": "^1.37.0",
-    "lucide-react": "^0.562.0"
+    "lucide-react": "^0.562.0",
+    "dotenv": "^17.2.3",
+    "express": "^5.2.1",
+    "cors": "^2.8.5",
+    "pg": "^8.17.1"
   },
   "devDependencies": {
     "@types/node": "^22.14.0",

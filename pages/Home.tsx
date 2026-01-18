@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect } from 'react';
-import { ChevronRight, ArrowRight, Shield, Zap, Globe, PlayCircle, Star, Send, ClipboardList, Camera, Award, Calendar, Trophy, Crown } from 'lucide-react';
+import { ChevronRight, ArrowRight, Shield, Zap, Globe, PlayCircle, Star, Send, ClipboardList, Camera, Award, Calendar, Trophy, Crown, CheckCircle2 } from 'lucide-react';
 import { SERVICES, STATS, SOCIAL_LINKS } from '../constants';
 import { getOwnerData, getAppreciation, getNews } from '../services/mockDataService';
 
@@ -20,9 +20,11 @@ const Home: React.FC<{ onNavigate: (path: string) => void }> = ({ onNavigate }) 
 
   return (
     <div className="relative">
-      {/* Hero Section */}
-      <section className="relative min-h-[100vh] flex items-center overflow-hidden pt-20">
-        <div className="absolute top-0 left-0 w-full h-full -z-10 bg-slate-50">
+      {/* Hero Section - Fixed Overflow Clipping */}
+      <section className="relative min-h-[100vh] flex items-center pt-20">
+        {/* Background Layer with Overflow Hidden */}
+        <div className="absolute inset-0 -z-10 overflow-hidden">
+          <div className="absolute top-0 left-0 w-full h-full bg-slate-50" />
           <div className="absolute -top-1/4 -right-1/4 w-[60%] h-full bg-green-50/60 rounded-full blur-[160px] animate-pulse" />
           <div className="absolute -bottom-1/4 -left-1/4 w-[60%] h-full bg-blue-50/60 rounded-full blur-[160px] animate-pulse" style={{ animationDelay: '2s' }} />
         </div>
@@ -50,13 +52,31 @@ const Home: React.FC<{ onNavigate: (path: string) => void }> = ({ onNavigate }) 
             </div>
           </div>
 
-          <div className="relative animate-in zoom-in duration-1000 delay-200">
+          <div className="relative animate-in zoom-in duration-1000 delay-200 py-12">
              <div className="relative z-10 rounded-[3rem] overflow-hidden shadow-2xl border-8 border-white">
                 <img src="https://images.unsplash.com/photo-1541888946425-d81bb19240f5?auto=format&fit=crop&q=80&w=1200" alt="Worksite" className="w-full aspect-video object-cover" />
              </div>
-             <div className="absolute -top-12 -left-12 glass p-6 rounded-[2rem] shadow-2xl">
-                <Camera className="w-10 h-10 text-green-500 mb-2" />
+             
+             {/* Floating Badges - Now clearly visible due to removed section overflow */}
+             <div className="absolute -top-4 -left-4 md:-top-12 md:-left-12 glass p-6 rounded-[2.5rem] shadow-2xl z-20 border border-white/50 animate-bounce-slow">
+                <Camera className="w-10 h-10 text-[#22c55e] mb-2" />
                 <h4 className="font-black text-xs uppercase tracking-widest text-slate-800">Hikvision Partner</h4>
+                <div className="flex items-center gap-1 mt-1">
+                   <CheckCircle2 size={12} className="text-blue-500" />
+                   <span className="text-[8px] font-black uppercase text-slate-400">Authorized</span>
+                </div>
+             </div>
+
+             <div className="absolute -bottom-8 -right-8 glass p-6 rounded-[2.5rem] shadow-2xl z-20 border border-white/50 hidden md:block">
+                <div className="flex items-center gap-4">
+                   <div className="p-3 bg-blue-100 rounded-2xl text-blue-600">
+                      <Shield size={24} />
+                   </div>
+                   <div>
+                      <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Enterprise</p>
+                      <p className="text-sm font-black text-slate-900">Security Solutions</p>
+                   </div>
+                </div>
              </div>
           </div>
         </div>
@@ -91,7 +111,6 @@ const Home: React.FC<{ onNavigate: (path: string) => void }> = ({ onNavigate }) 
       <section className="py-32 bg-slate-950 text-white overflow-hidden relative border-y-8 border-yellow-500/10">
         <div className="absolute inset-0 opacity-20 bg-[url('https://www.transparenttextures.com/patterns/carbon-fibre.png')]" />
         
-        {/* Floating background icons */}
         <div className="absolute top-20 left-20 opacity-5 animate-pulse">
            <Trophy size={200} />
         </div>
@@ -109,18 +128,15 @@ const Home: React.FC<{ onNavigate: (path: string) => void }> = ({ onNavigate }) 
            <div className="max-w-6xl mx-auto bg-white/5 backdrop-blur-3xl rounded-[5rem] p-12 md:p-20 border border-white/10 shadow-[0_0_100px_rgba(234,179,8,0.1)] relative overflow-hidden group">
               <div className="grid lg:grid-cols-12 gap-16 items-center">
                 
-                {/* The Champion's Frame Styling */}
                 <div className="lg:col-span-5 relative">
                   <div className="absolute -inset-10 bg-yellow-500/20 rounded-full blur-[100px] animate-pulse" />
                   <div className="relative z-10 p-3 bg-gradient-to-tr from-yellow-700 via-yellow-400 to-yellow-700 rounded-full shadow-[0_0_80px_rgba(234,179,8,0.3)] transform transition-transform duration-700 group-hover:scale-105">
                      <div className="bg-slate-900 p-2 rounded-full overflow-hidden">
                         <img src={appreciation.photo} className="w-full aspect-square rounded-full object-cover filter brightness-110" />
                      </div>
-                     {/* Overlay Badge */}
                      <div className="absolute -bottom-6 -right-6 bg-yellow-500 text-slate-950 p-5 rounded-[2rem] shadow-2xl border-4 border-slate-950 flex items-center justify-center transform group-hover:rotate-12 transition-all">
                         <Trophy size={40} strokeWidth={2.5} />
                      </div>
-                     {/* Header Crown */}
                      <div className="absolute -top-8 left-1/2 -translate-x-1/2 bg-yellow-500 text-slate-950 p-2 px-6 rounded-full font-black text-xs uppercase tracking-[0.3em] border-4 border-slate-950 shadow-xl">
                         CHAMPION
                      </div>
@@ -195,7 +211,7 @@ const Home: React.FC<{ onNavigate: (path: string) => void }> = ({ onNavigate }) 
         </div>
       </section>
 
-      {/* Customer Subscription Portal */}
+      {/* Subscription Portal */}
       <section className="py-32">
         <div className="container mx-auto px-6">
            <div className="bg-[#0a0f1d] rounded-[4rem] p-16 md:p-32 text-center text-white relative overflow-hidden">

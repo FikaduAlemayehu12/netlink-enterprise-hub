@@ -93,14 +93,16 @@ const About: React.FC = () => {
           </div>
         </section>
 
-        {/* Partners */}
-        <section className="bg-slate-950 -mx-6 px-12 py-32 rounded-[5rem] text-center">
+        {/* Partners - Enhanced Visibility */}
+        <section className="bg-slate-950 -mx-6 px-12 py-32 rounded-[5rem] text-center border-t border-white/5">
              <h2 className="text-4xl font-black text-white mb-20 tracking-tight">Authorized Global Partners</h2>
-             <div className="flex flex-wrap justify-center gap-20">
+             <div className="flex flex-wrap justify-center gap-10 md:gap-20">
                 {['HIKVISION', 'CISCO', 'DELL', 'HUAWEI', 'SOPHOS', 'ORACLE'].map(p => (
-                  <div key={p} className="flex items-center gap-3">
-                    <Award className="w-10 h-10 text-green-400 opacity-40" />
-                    <span className="font-black text-white text-xl tracking-tighter opacity-30 group-hover:opacity-100 transition-opacity">{p}</span>
+                  <div key={p} className="flex items-center gap-3 group">
+                    <Award className="w-10 h-10 text-green-400 opacity-60 group-hover:opacity-100 transition-opacity" />
+                    <span className="font-black text-white text-xl tracking-tighter opacity-60 group-hover:opacity-100 group-hover:text-green-400 transition-all cursor-default">
+                      {p}
+                    </span>
                   </div>
                 ))}
              </div>
