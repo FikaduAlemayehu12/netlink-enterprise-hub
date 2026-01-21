@@ -1,236 +1,233 @@
 
 import React, { useState, useEffect } from 'react';
-import { ChevronRight, ArrowRight, Shield, Zap, Globe, PlayCircle, Star, Send, ClipboardList, Camera, Award, Calendar, Trophy, Crown, CheckCircle2 } from 'lucide-react';
-import { SERVICES, STATS, SOCIAL_LINKS } from '../constants';
-import { getOwnerData, getAppreciation, getNews } from '../services/mockDataService';
+import { ArrowRight, ChevronRight, Zap, ShieldCheck, Calendar, Monitor, Radio, Activity, Sun, Moon, TreePine, PlayCircle } from 'lucide-react';
+import { SOCIAL_LINKS } from '../constants';
+import { getOwnerData, getNews } from '../services/mockDataService';
+
+const SNAPSHOTS = [
+  { url: "https://images.unsplash.com/photo-1472214103451-9374bd1c798e?auto=format&fit=crop&q=80&w=1600", label: "Nature Beauty", category: "WILDLIFE" },
+  { url: "https://images.unsplash.com/photo-1546182990-dffeafbe841d?auto=format&fit=crop&q=80&w=1600", label: "Savannah Zoo", category: "ZOO" },
+  { url: "https://images.unsplash.com/photo-1470252649378-9c29740c9fa8?auto=format&fit=crop&q=80&w=1600", label: "Supernatural Sunset", category: "SUNSET" },
+  { url: "https://images.unsplash.com/photo-1522030239044-12f91ef1135b?auto=format&fit=crop&q=80&w=1600", label: "Lunar Fidelity", category: "MOON" },
+  { url: "https://images.unsplash.com/photo-1550751827-44bd374c3f58?auto=format&fit=crop&q=80&w=1600", label: "Tech Core Hub", category: "INFRASTRUCTURE" },
+];
 
 const Home: React.FC<{ onNavigate: (path: string) => void }> = ({ onNavigate }) => {
   const [owner, setOwner] = useState(getOwnerData());
-  const [appreciation, setAppreciation] = useState(getAppreciation());
   const [news, setNews] = useState(getNews());
+  const [snapshotIndex, setSnapshotIndex] = useState(0);
 
   useEffect(() => {
-    const interval = setInterval(() => {
+    const newsInterval = setInterval(() => {
       setOwner(getOwnerData());
-      setAppreciation(getAppreciation());
       setNews(getNews());
-    }, 2000);
-    return () => clearInterval(interval);
+    }, 5000);
+
+    const snapshotInterval = setInterval(() => {
+      setSnapshotIndex(prev => (prev + 1) % SNAPSHOTS.length);
+    }, 5000);
+
+    return () => {
+      clearInterval(newsInterval);
+      clearInterval(snapshotInterval);
+    };
   }, []);
+
+  const posters = news.filter(n => n.type === 'Poster' || n.type === 'Ad');
+
+  const nextSnapshot = () => setSnapshotIndex(prev => (prev + 1) % SNAPSHOTS.length);
 
   return (
     <div className="relative">
-      {/* Hero Section - Fixed Overflow Clipping */}
-      <section className="relative min-h-[100vh] flex items-center pt-20">
-        {/* Background Layer with Overflow Hidden */}
-        <div className="absolute inset-0 -z-10 overflow-hidden">
-          <div className="absolute top-0 left-0 w-full h-full bg-slate-50" />
-          <div className="absolute -top-1/4 -right-1/4 w-[60%] h-full bg-green-50/60 rounded-full blur-[160px] animate-pulse" />
-          <div className="absolute -bottom-1/4 -left-1/4 w-[60%] h-full bg-blue-50/60 rounded-full blur-[160px] animate-pulse" style={{ animationDelay: '2s' }} />
-        </div>
-
-        <div className="container mx-auto px-6 grid lg:grid-cols-2 gap-16 items-center">
-          <div className="space-y-10 animate-in slide-in-from-left duration-1000">
-            <div className="inline-flex items-center gap-3 bg-white border border-slate-200 px-5 py-2 rounded-full shadow-sm">
-              <span className="text-slate-800 text-[10px] font-black uppercase tracking-[0.2em]">Addis Ababa's IT Hub</span>
+      {/* MINIMALIST HERO SECTION */}
+      <section className="relative min-h-screen flex items-center overflow-hidden bg-white pt-20">
+        <div className="absolute top-0 right-0 w-1/2 h-full bg-slate-50 skew-x-[-15deg] translate-x-32 z-0 hidden lg:block" />
+        
+        <div className="container mx-auto px-6 grid lg:grid-cols-2 gap-20 items-center relative z-10">
+          <div className="space-y-12 animate-in slide-in-from-left duration-1000">
+            <div className="inline-flex items-center gap-3 bg-blue-50 border border-blue-100 px-6 py-2.5 rounded-full shadow-sm">
+              <Zap className="w-4 h-4 text-blue-600 animate-pulse" />
+              <span className="text-blue-900 text-[10px] font-black uppercase tracking-[0.25em]">Precision Technology</span>
             </div>
             
-            <h1 className="text-6xl md:text-8xl font-black text-slate-900 leading-[0.95] tracking-tight">
-              Design. <br />
-              <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#22c55e] to-[#414bb2]">Build.</span> <br />
-              Connect.
+            <h1 className="text-7xl md:text-[8.5rem] font-black text-slate-900 leading-[0.82] tracking-tighter uppercase">
+              Vision <br />
+              <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-600 via-emerald-500 to-blue-700">Excellence.</span>
             </h1>
             
-            <p className="text-xl text-slate-600 leading-relaxed max-w-xl font-medium">
-              NetLink General Solutions: Your partner for <strong>CCTV (Hikvision)</strong>, <strong>Full Electricity Finishing</strong>, and <strong>Any Software Project</strong>.
+            <p className="text-2xl text-slate-600 leading-relaxed max-w-xl font-medium">
+              NetLink General Solutions: Engineering Ethiopia's digital future with world-class infrastructure and high-fidelity visual technology.
             </p>
 
-            <div className="flex flex-wrap gap-5">
-              <button onClick={() => onNavigate('/contact')} className="group relative bg-[#414bb2] text-white px-10 py-5 rounded-2xl font-black text-lg shadow-2xl shadow-blue-200">
-                <span className="relative z-10 flex items-center gap-3">Start Your Project <ArrowRight className="w-6 h-6 group-hover:translate-x-2 transition-transform" /></span>
+            <div className="flex flex-wrap gap-6 pt-4">
+              <button onClick={() => onNavigate('/contact')} className="bg-slate-900 text-white px-12 py-6 rounded-3xl font-black text-xl shadow-[0_30px_60px_-15px_rgba(15,23,42,0.4)] hover:scale-105 transition-all flex items-center gap-4 group">
+                Connect <ArrowRight className="w-7 h-7 group-hover:translate-x-2 transition-transform" />
+              </button>
+              <button onClick={() => onNavigate('/services')} className="px-12 py-6 rounded-3xl font-black text-xl text-slate-800 hover:bg-slate-100 transition-all border-2 border-slate-100">
+                Services
               </button>
             </div>
           </div>
 
-          <div className="relative animate-in zoom-in duration-1000 delay-200 py-12">
-             <div className="relative z-10 rounded-[3rem] overflow-hidden shadow-2xl border-8 border-white">
-                <img src="https://images.unsplash.com/photo-1541888946425-d81bb19240f5?auto=format&fit=crop&q=80&w=1200" alt="Worksite" className="w-full aspect-video object-cover" />
+          <div className="relative group">
+             {/* DYNAMIC 4K STREAM HUB - CLICKS TO CHANGE */}
+             <div 
+                onClick={nextSnapshot}
+                className="rounded-[4rem] overflow-hidden shadow-[0_50px_100px_-20px_rgba(0,0,0,0.4)] border-[15px] border-white relative z-10 aspect-square lg:scale-110 cursor-pointer active:scale-95 transition-transform duration-300"
+             >
+                <img 
+                  key={SNAPSHOTS[snapshotIndex].url}
+                  src={SNAPSHOTS[snapshotIndex].url} 
+                  alt={SNAPSHOTS[snapshotIndex].label} 
+                  className="w-full h-full object-cover animate-in fade-in duration-1000" 
+                />
+                
+                {/* DYNAMIC MOTION OVERLAYS */}
+                <div className="absolute inset-0 bg-gradient-to-t from-slate-950/90 via-transparent to-slate-950/30" />
+                
+                {/* Observation Scan Line */}
+                <div className="absolute inset-0 pointer-events-none overflow-hidden opacity-10">
+                   <div className="w-full h-1 bg-blue-500 blur-sm shadow-[0_0_15px_#3b82f6] animate-scan" />
+                </div>
+
+                {/* Status UI Labels */}
+                <div className="absolute top-12 left-12 flex flex-col gap-4">
+                   <div className="bg-white text-slate-900 px-6 py-2.5 rounded-2xl flex items-center gap-3 shadow-2xl">
+                      <PlayCircle size={16} className="text-blue-600 animate-spin-slow" />
+                      <span className="text-[11px] font-black uppercase tracking-[0.2em]">LIVE: {SNAPSHOTS[snapshotIndex].category}</span>
+                   </div>
+                   <div className="bg-white/10 backdrop-blur-xl border border-white/20 text-white px-5 py-2.5 rounded-2xl flex items-center gap-3">
+                      <Sun size={14} className="text-yellow-400" />
+                      <span className="text-[10px] font-black tracking-widest uppercase">Fidelity: Peak</span>
+                   </div>
+                </div>
+
+                <div className="absolute bottom-12 right-12 text-right">
+                   <div className="bg-white/10 backdrop-blur-md px-4 py-2 rounded-xl inline-block border border-white/10 mb-2">
+                      <span className="text-white text-[10px] font-black uppercase">{SNAPSHOTS[snapshotIndex].label}</span>
+                   </div>
+                   <p className="text-white text-[9px] font-black uppercase tracking-[0.4em]">Supernatural Force</p>
+                   <p className="text-5xl font-black text-white leading-none mt-1">4K HDR</p>
+                </div>
              </div>
              
-             {/* Floating Badges - Now clearly visible due to removed section overflow */}
-             <div className="absolute -top-4 -left-4 md:-top-12 md:-left-12 glass p-6 rounded-[2.5rem] shadow-2xl z-20 border border-white/50 animate-bounce-slow">
-                <Camera className="w-10 h-10 text-[#22c55e] mb-2" />
-                <h4 className="font-black text-xs uppercase tracking-widest text-slate-800">Hikvision Partner</h4>
-                <div className="flex items-center gap-1 mt-1">
-                   <CheckCircle2 size={12} className="text-blue-500" />
-                   <span className="text-[8px] font-black uppercase text-slate-400">Authorized</span>
-                </div>
-             </div>
-
-             <div className="absolute -bottom-8 -right-8 glass p-6 rounded-[2.5rem] shadow-2xl z-20 border border-white/50 hidden md:block">
-                <div className="flex items-center gap-4">
-                   <div className="p-3 bg-blue-100 rounded-2xl text-blue-600">
-                      <Shield size={24} />
-                   </div>
-                   <div>
-                      <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Enterprise</p>
-                      <p className="text-sm font-black text-slate-900">Security Solutions</p>
-                   </div>
-                </div>
+             {/* FLOATING STATUS */}
+             <div className="absolute -top-12 -right-12 bg-white p-12 rounded-[4rem] shadow-2xl z-30 border-8 border-slate-50 flex flex-col items-center animate-bounce-slow">
+                <Moon className="w-14 h-14 text-blue-900 mb-2" />
+                <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Global</p>
+                <p className="text-xl font-black text-slate-900">FIDELITY</p>
              </div>
           </div>
         </div>
       </section>
 
-      {/* Dynamic News Feed */}
-      <section className="py-24 bg-white border-y">
-        <div className="container mx-auto px-6">
-          <div className="flex justify-between items-center mb-12">
-             <h2 className="text-3xl font-black text-slate-900">Latest Updates & Events</h2>
-             <div className="h-0.5 flex-grow mx-8 bg-slate-100 rounded-full" />
-             <div className="flex items-center gap-3 text-xs font-black uppercase text-[#22c55e] tracking-widest">
-                <Calendar size={18} /> Daily Feed
-             </div>
-          </div>
-          <div className="grid md:grid-cols-3 gap-8">
-            {news.slice(0, 3).map(item => (
-              <div key={item.id} className="p-8 bg-slate-50 rounded-[2.5rem] hover:bg-white hover:shadow-xl transition-all border border-transparent hover:border-slate-100 group">
-                <span className="text-[10px] font-black uppercase text-blue-600 tracking-widest">{item.type}</span>
-                <h3 className="text-xl font-black mt-2 mb-4 group-hover:text-blue-600 transition-colors">{item.title}</h3>
-                <p className="text-slate-500 text-sm leading-relaxed">{item.content}</p>
-                <div className="mt-6 pt-6 border-t border-slate-200 text-[10px] font-bold text-slate-400 uppercase tracking-widest">
-                  {item.date} • POSTED BY {item.author}
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* Champion's Hall of Fame Appreciation Section */}
-      <section className="py-32 bg-slate-950 text-white overflow-hidden relative border-y-8 border-yellow-500/10">
-        <div className="absolute inset-0 opacity-20 bg-[url('https://www.transparenttextures.com/patterns/carbon-fibre.png')]" />
+      {/* CORE CAPABILITIES */}
+      <section className="py-44 bg-slate-950 text-white relative overflow-hidden">
+        <div className="absolute inset-0 opacity-[0.03] pointer-events-none bg-[url('https://www.transparenttextures.com/patterns/carbon-fibre.png')]" />
         
-        <div className="absolute top-20 left-20 opacity-5 animate-pulse">
-           <Trophy size={200} />
-        </div>
-        <div className="absolute bottom-20 right-20 opacity-5 animate-pulse" style={{ animationDelay: '1s' }}>
-           <Award size={180} />
-        </div>
-
         <div className="container mx-auto px-6 relative z-10">
-           <div className="text-center mb-20 space-y-4">
-              <Award className="w-16 h-16 text-yellow-500 mx-auto mb-6 animate-bounce" />
-              <h2 className="text-4xl md:text-7xl font-black tracking-tighter uppercase leading-none">Hall of <span className="text-yellow-500">Excellence</span></h2>
-              <p className="text-blue-200 text-xl font-medium">NetLink Quarterly Appreciation Spotlight</p>
+          <div className="grid lg:grid-cols-3 gap-20">
+             <div className="space-y-8 group">
+                <div className="w-20 h-20 bg-blue-600 rounded-3xl flex items-center justify-center shadow-2xl shadow-blue-500/30 group-hover:scale-110 transition-transform">
+                   <Monitor className="w-10 h-10" />
+                </div>
+                <h3 className="text-4xl font-black uppercase tracking-tight leading-none">Ultra-HD <br /><span className="text-blue-500">Visuals.</span></h3>
+                <p className="text-slate-400 font-medium text-lg leading-relaxed">Capturing snapshots—from wildlife sanctuaries to high-tech server rooms in pure 4K.</p>
+             </div>
+
+             <div className="space-y-8 group">
+                <div className="w-20 h-20 bg-emerald-600 rounded-3xl flex items-center justify-center shadow-2xl shadow-emerald-500/30 group-hover:scale-110 transition-transform">
+                   <TreePine className="w-10 h-10" />
+                </div>
+                <h3 className="text-4xl font-black uppercase tracking-tight leading-none">Nature <br /><span className="text-emerald-500">Observation.</span></h3>
+                <p className="text-slate-400 font-medium text-lg leading-relaxed">Integrated streaming for national parks and zoos, delivering nature's beauty to any device globally.</p>
+             </div>
+
+             <div className="space-y-8 group">
+                <div className="w-20 h-20 bg-slate-800 rounded-3xl flex items-center justify-center shadow-2xl border border-white/10 group-hover:scale-110 transition-transform">
+                   <Activity className="w-10 h-10 text-blue-400" />
+                </div>
+                <h3 className="text-4xl font-black uppercase tracking-tight leading-none">Tech <br /><span className="text-slate-400">Hub Core.</span></h3>
+                <p className="text-slate-400 font-medium text-lg leading-relaxed">Deep-learning telemetry for habitat monitoring and environmental tracking with enterprise-grade precision.</p>
+             </div>
+          </div>
+        </div>
+      </section>
+
+      {/* ADS & POSTERS */}
+      <section className="py-40 bg-white">
+        <div className="container mx-auto px-6">
+           <div className="flex flex-col md:flex-row justify-between items-end mb-24 gap-8">
+             <div className="space-y-4">
+               <h2 className="text-6xl font-black text-slate-900 uppercase tracking-tighter">Corporate <br /> <span className="text-blue-600">Marketing Hub.</span></h2>
+               <p className="text-xl text-slate-500 font-medium max-w-lg">Official posters and tech bulletins from our innovation command center.</p>
+             </div>
+             <button onClick={() => onNavigate('/services')} className="flex items-center gap-4 text-xl font-black text-slate-900 uppercase tracking-widest hover:text-blue-600 transition-all group">
+               View All <ChevronRight className="group-hover:translate-x-3 transition-transform" />
+             </button>
            </div>
            
-           <div className="max-w-6xl mx-auto bg-white/5 backdrop-blur-3xl rounded-[5rem] p-12 md:p-20 border border-white/10 shadow-[0_0_100px_rgba(234,179,8,0.1)] relative overflow-hidden group">
-              <div className="grid lg:grid-cols-12 gap-16 items-center">
-                
-                <div className="lg:col-span-5 relative">
-                  <div className="absolute -inset-10 bg-yellow-500/20 rounded-full blur-[100px] animate-pulse" />
-                  <div className="relative z-10 p-3 bg-gradient-to-tr from-yellow-700 via-yellow-400 to-yellow-700 rounded-full shadow-[0_0_80px_rgba(234,179,8,0.3)] transform transition-transform duration-700 group-hover:scale-105">
-                     <div className="bg-slate-900 p-2 rounded-full overflow-hidden">
-                        <img src={appreciation.photo} className="w-full aspect-square rounded-full object-cover filter brightness-110" />
-                     </div>
-                     <div className="absolute -bottom-6 -right-6 bg-yellow-500 text-slate-950 p-5 rounded-[2rem] shadow-2xl border-4 border-slate-950 flex items-center justify-center transform group-hover:rotate-12 transition-all">
-                        <Trophy size={40} strokeWidth={2.5} />
-                     </div>
-                     <div className="absolute -top-8 left-1/2 -translate-x-1/2 bg-yellow-500 text-slate-950 p-2 px-6 rounded-full font-black text-xs uppercase tracking-[0.3em] border-4 border-slate-950 shadow-xl">
-                        CHAMPION
-                     </div>
-                  </div>
+           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-14">
+              {posters.map((post) => (
+                <div key={post.id} className="bg-slate-50 rounded-[4rem] p-12 border-2 border-transparent hover:border-blue-100 hover:bg-white hover:shadow-[0_40px_80px_-20px_rgba(0,0,0,0.1)] transition-all duration-500 group">
+                   <div className="aspect-[4/3] bg-white rounded-[2.5rem] mb-12 flex items-center justify-center text-slate-200 overflow-hidden relative shadow-inner">
+                      {post.image ? (
+                        <img src={post.image} className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110" alt={post.title} />
+                      ) : (
+                        <Monitor size={80} className="text-slate-100" />
+                      )}
+                      <div className="absolute top-8 left-8">
+                        <span className="px-6 py-2.5 bg-blue-600 text-white text-[10px] font-black uppercase tracking-[0.2em] rounded-full shadow-lg">
+                          {post.type}
+                        </span>
+                      </div>
+                   </div>
+                   <h3 className="text-3xl font-black mb-6 group-hover:text-blue-600 transition-colors tracking-tight">{post.title}</h3>
+                   <p className="text-slate-500 font-medium mb-12 text-lg leading-relaxed line-clamp-3">{post.content}</p>
+                   <div className="pt-10 border-t border-slate-200 flex justify-between items-center">
+                      <span className="text-[10px] font-black uppercase text-slate-400 tracking-widest">{post.date}</span>
+                      <div className="flex gap-6">
+                         <a href={SOCIAL_LINKS.telegram} target="_blank" className="text-slate-300 hover:text-blue-500 transition-all hover:scale-125"><Radio size={24} /></a>
+                      </div>
+                   </div>
                 </div>
-
-                <div className="lg:col-span-7 space-y-8 text-center lg:text-left">
-                  <div className="space-y-4">
-                    <div className="flex items-center justify-center lg:justify-start gap-4">
-                       <span className="w-12 h-[1px] bg-yellow-500/50" />
-                       <span className="text-yellow-400 font-black text-sm uppercase tracking-[0.5em]">Employee of the Quarter</span>
-                       <span className="w-12 h-[1px] bg-yellow-500/50" />
-                    </div>
-                    <h3 className="text-5xl md:text-8xl font-black tracking-tighter text-white leading-none">
-                       {appreciation.name}
-                    </h3>
-                    <p className="text-blue-300 font-black text-2xl uppercase tracking-tight italic">
-                       {appreciation.achievement}
-                    </p>
-                  </div>
-
-                  <div className="bg-white/5 p-8 rounded-[3rem] border border-white/10 space-y-6 relative">
-                     <div className="absolute top-0 right-0 p-6 text-white/10"><Crown size={40} /></div>
-                     <p className="text-slate-300 text-xl font-medium leading-relaxed italic">
-                        "Recognizing consistent professionalism and technical superiority. At NetLink, excellence isn't just a goal—it's our baseline. Thank you for setting the standard."
-                     </p>
-                     <div className="flex flex-wrap gap-4 items-center justify-center lg:justify-start">
-                        <div className="bg-yellow-500 text-slate-950 px-6 py-2 rounded-full font-black text-xs uppercase tracking-widest">
-                           {appreciation.period}
-                        </div>
-                        <div className="flex items-center gap-2 text-slate-400 font-bold text-xs uppercase tracking-widest">
-                           <Shield size={16} className="text-blue-500" /> Professional Verified
-                        </div>
-                     </div>
-                  </div>
-                </div>
-              </div>
+              ))}
            </div>
         </div>
       </section>
 
-      {/* Founder Section */}
-      <section className="py-40 bg-slate-50">
-        <div className="container mx-auto px-6">
-           <div className="grid lg:grid-cols-2 gap-24 items-center">
-              <div className="relative">
-                 <img src={owner.image} alt="Founder" className="relative z-10 rounded-[4rem] shadow-2xl h-[600px] w-full object-cover" />
-                 <div className="absolute -bottom-10 -left-10 z-20 glass p-8 rounded-[3rem] shadow-2xl max-w-sm border border-white">
-                    <p className="text-slate-800 font-bold text-lg italic mb-4 leading-snug">"{owner.bio.split('.')[0]}."</p>
-                    <div className="flex items-center gap-4">
-                       <div className="w-12 h-12 rounded-full bg-green-500 flex items-center justify-center text-white font-black">NL</div>
-                       <div>
-                          <p className="text-slate-900 font-black text-xs uppercase">{owner.name}</p>
-                          <p className="text-[#22c55e] font-black text-[10px] uppercase">{owner.role}</p>
-                       </div>
-                    </div>
+      {/* CEO SECTION WITH OFFICIAL PORTRAIT */}
+      <section className="py-44 bg-[#0f172a] text-white overflow-hidden relative">
+        <div className="absolute top-0 right-0 w-1/2 h-full bg-blue-600/10 blur-[150px] rounded-full" />
+        <div className="container mx-auto px-6 grid lg:grid-cols-2 gap-32 items-center">
+           <div className="space-y-12 relative z-10">
+              <span className="text-emerald-400 text-xs font-black uppercase tracking-[0.6em] flex items-center gap-4">
+                <div className="w-12 h-0.5 bg-emerald-400/30" /> Leadership Philosophy
+              </span>
+              <h2 className="text-6xl md:text-9xl font-black leading-[0.85] tracking-tighter uppercase">Founders <br /> <span className="text-slate-600">Identity.</span></h2>
+              <p className="text-3xl text-slate-300 font-medium italic leading-relaxed tracking-tight border-l-4 border-blue-600 pl-12">
+                "{owner.bio}"
+              </p>
+              <div className="pt-12 flex items-center gap-10">
+                 <div className="w-24 h-0.5 bg-slate-800" />
+                 <div>
+                    <p className="text-4xl font-black tracking-tight">{owner.name}</p>
+                    <p className="text-emerald-400 font-black text-xs uppercase tracking-[0.4em] mt-1">{owner.role}</p>
                  </div>
               </div>
-
-              <div className="space-y-12">
-                <div className="space-y-6">
-                  <h4 className="text-blue-600 font-black uppercase tracking-[0.2em] text-xs">Our Purpose</h4>
-                  <h2 className="text-5xl md:text-7xl font-black text-slate-900 leading-none tracking-tighter">Leading Through Innovation.</h2>
-                  <p className="text-lg text-slate-600 leading-relaxed font-medium">{owner.bio}</p>
-                </div>
-                <button onClick={() => onNavigate('/about')} className="inline-flex items-center gap-4 text-slate-900 font-black text-lg group">
-                  <span className="border-b-4 border-green-500 pb-1 group-hover:border-blue-600 transition-colors">Learn More About Us</span>
-                  <ArrowRight className="w-6 h-6 group-hover:translate-x-3 transition-transform text-green-500" />
-                </button>
-              </div>
            </div>
-        </div>
-      </section>
-
-      {/* Subscription Portal */}
-      <section className="py-32">
-        <div className="container mx-auto px-6">
-           <div className="bg-[#0a0f1d] rounded-[4rem] p-16 md:p-32 text-center text-white relative overflow-hidden">
-             <div className="relative z-10 space-y-12">
-                <h2 className="text-5xl md:text-8xl font-black max-w-5xl mx-auto leading-none tracking-tighter">
-                  Subscribe to <span className="text-transparent bg-clip-text bg-gradient-to-r from-green-400 to-blue-400">NetLink Updates.</span>
-                </h2>
-                <div className="max-w-xl mx-auto flex flex-col sm:flex-row gap-4">
-                  <input 
-                    placeholder="Enter your corporate email" 
-                    className="flex-grow px-8 py-6 rounded-3xl bg-white/10 border border-white/20 text-white outline-none focus:ring-2 focus:ring-green-500 transition-all font-bold"
-                  />
-                  <button className="bg-white text-slate-950 px-10 py-6 rounded-3xl font-black text-xl hover:bg-green-500 hover:text-white transition-all shadow-2xl">
-                    Join Portal
-                  </button>
-                </div>
-                <p className="text-slate-400 font-medium">Join 500+ professionals receiving daily IT insights in Ethiopia.</p>
+           <div className="relative group perspective-1000">
+             <div className="absolute -inset-10 bg-blue-600/20 rounded-[7rem] blur-[120px] group-hover:bg-blue-600/40 transition-all duration-700" />
+             <img 
+               src={owner.image} 
+               className="relative z-10 w-full aspect-square object-cover rounded-[5rem] shadow-[0_50px_100px_-20px_rgba(0,0,0,0.6)] grayscale hover:grayscale-0 transition-all duration-1000 transform hover:scale-[1.03]" 
+               alt={owner.name}
+             />
+             <div className="absolute -bottom-12 -left-12 bg-white text-slate-900 p-10 rounded-[3.5rem] z-20 shadow-2xl border-4 border-blue-50">
+               <p className="text-[11px] font-black uppercase tracking-[0.2em] text-blue-600 mb-2">Since</p>
+               <p className="text-4xl font-black">2024</p>
              </div>
-          </div>
+           </div>
         </div>
       </section>
     </div>

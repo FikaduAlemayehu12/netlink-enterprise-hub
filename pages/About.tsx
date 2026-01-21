@@ -16,8 +16,9 @@ const About: React.FC = () => {
     return () => clearInterval(interval);
   }, []);
 
-  // Filter executive/lead level employees for the "Team" display
-  const keyTeam = employees.filter(e => e.seniority === 'Executive' || e.seniority === 'Lead' || e.role.includes('Head'));
+  // Filter executive/senior level employees for the "Team" display
+  // Fixed: Changed 'Lead' to 'Senior' to match the Seniority type definition in types.ts
+  const keyTeam = employees.filter(e => e.seniority === 'Executive' || e.seniority === 'Senior' || e.role.includes('Head'));
 
   return (
     <div className="pt-32 pb-24">
@@ -81,7 +82,8 @@ const About: React.FC = () => {
                 <div className="relative overflow-hidden rounded-[3rem] aspect-square">
                   <img src={member.photo} alt={member.name} className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110" />
                   <div className="absolute inset-0 bg-gradient-to-t from-blue-900/90 to-transparent opacity-0 group-hover:opacity-100 transition-all flex items-end justify-center p-8">
-                    <p className="text-white text-xs font-bold leading-relaxed">{member.plan}</p>
+                    {/* Fixed: member.plan was invalid; replaced with member.bio which is a string available on Employee */}
+                    <p className="text-white text-xs font-bold leading-relaxed">{member.bio}</p>
                   </div>
                 </div>
                 <div>

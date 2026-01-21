@@ -17,28 +17,6 @@ The project now uses **Sequelize ORM** for automated database management.
 2. Create an empty database named `netlink-gs`.
 3. **Important**: You do NOT need to run any SQL scripts. Sequelize will create all tables automatically when the server starts.
 
-### Run with Docker (recommended)
-1. Ensure Docker Desktop is installed and running.
-2. From the `netlink-enterprise-hub` folder run:
-
-```bash
-docker-compose up -d
-```
-
-This will start a Postgres container and automatically apply `schema.sql` during initialization. The database will be available on `localhost:5432` with credentials from `.env.example`.
-
-### Start backend
-1. Copy `.env.example` to `.env` and adjust values if needed.
-2. Install dependencies and start the backend:
-
-```bash
-cd netlink-enterprise-hub
-npm install
-npm run dev
-```
-
-The backend will connect to the Postgres instance started by Docker Compose.
-
 ### 3. Backend Setup
 1. Configure `.env` with your Postgres password.
 2. Install dependencies:
